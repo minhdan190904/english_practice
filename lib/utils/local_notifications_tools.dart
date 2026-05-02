@@ -54,7 +54,7 @@ class LocalNotificationsTools {
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    final AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('launcher');
+    final AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('ic_launcher');
     final initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,

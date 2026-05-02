@@ -34,23 +34,45 @@ void main() async {
       statusBarIconBrightness: isDarkMode ? Brightness.light : Brightness.dark,
     ),
   );
-  await Firebase.initializeApp();
-  await Future.wait([
-    MobileAds.instance.initialize(),
-    LocalNotificationsTools().initialize(
-      onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse: onDidReceiveBackgroundNotificationResponse,
-    ),
-    DI().init(),
-    GlobalValues.init(),
-  ]);
+
+  Future<T> runStep<T>(String name, Future<T> Function() action) async {
+    debugPrint('Startup: $name - start');
+    try {
+      final result = await action();
+      debugPrint('Startup: $name - done');
+      return result;
+    } catch (e, stack) {
+      debugPrint('Startup: $name - error: $e');
+      debugPrint(stack.toString());
+      rethrow;
+    }
+  }
+
+  await runStep('Firebase.initializeApp', () => Firebase.initializeApp());
+  await runStep(
+    'Initializers (ads, notifications, DI, globals)',
+    () => Future.wait([
+      runStep('MobileAds.initialize', () => MobileAds.instance.initialize()),
+      runStep(
+        'LocalNotificationsTools.initialize',
+        () => LocalNotificationsTools().initialize(
+          onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
+          onDidReceiveBackgroundNotificationResponse: onDidReceiveBackgroundNotificationResponse,
+        ),
+      ),
+      runStep('DI.init', () => DI().init()),
+      runStep('GlobalValues.init', () => GlobalValues.init()),
+    ]),
+  );
+
   ConsentManager.gatherConsent((consentError) {
     if (consentError != null) {
       debugPrint("Consent error: ${consentError.errorCode}: ${consentError.message}");
     }
     MobileAds.instance.initialize();
   });
-  await DI().sl<OxfordWordsRepository>().initData();
+
+  await runStep('OxfordWordsRepository.initData', () => DI().sl<OxfordWordsRepository>().initData());
 
   if (appFlavor != 'production' || kDebugMode) {
     debugPrint('setAnalyticsCollectionEnabled false');
@@ -72,8 +94,11 @@ void main() async {
   }
 
   tz.initializeTimeZones();
-  final currentTimeZone = await FlutterTimezone.getLocalTimezone();
-  tz.setLocalLocation(tz.getLocation(currentTimeZone));
+  final currentTimeZone = await runStep('FlutterTimezone.getLocalTimezone', () => FlutterTimezone.getLocalTimezone());
+  runStep('tz.setLocalLocation', () async {
+    tz.setLocalLocation(tz.getLocation(currentTimeZone));
+  });
+
   runApp(
     MultiBlocProvider(
       providers: [
