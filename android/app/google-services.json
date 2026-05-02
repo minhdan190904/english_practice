@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "200027552536",
+    "project_id": "englishpractice-7fac0",
+    "storage_bucket": "englishpractice-7fac0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200027552536:android:08519fa1cb08d138bc3c6d",
+        "android_client_info": {
+          "package_name": "com.minhdan.english_practice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4blPZwNNQxRQqnRK6vjm1ydwLKnPy-n8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
