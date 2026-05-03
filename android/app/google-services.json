@@ -12,7 +12,20 @@
           "package_name": "com.minhdan.english_practice"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "200027552536-r99i16l88gbivk1i7mt15i7hk8qk0mlh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.minhdan.english_practice",
+            "certificate_hash": "9d7c93f007dbfc6fcac4e390069341a5ae4f7058"
+          }
+        },
+        {
+          "client_id": "200027552536-lkb5emfs6fg3r0ujl2b7rso3fr8e5h2m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD4blPZwNNQxRQqnRK6vjm1ydwLKnPy-n8"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "200027552536-lkb5emfs6fg3r0ujl2b7rso3fr8e5h2m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
