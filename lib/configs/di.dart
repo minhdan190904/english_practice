@@ -16,7 +16,9 @@ import '../data/repositories/lesson_repository.dart';
 import '../data/repositories/notifications_repository.dart';
 import '../data/repositories/oxford_words_repository.dart';
 import '../data/repositories/settings_repository.dart';
+import '../data/repositories/auth_repository.dart';
 import '../data/repositories/streak_repository.dart';
+import '../ui/blocs/auth/auth_cubit.dart';
 import '../ui/blocs/iap/iap_bloc.dart';
 import '../ui/blocs/translate/translate_cubit.dart';
 import '../ui/screens/grammar/bloc/lesson_bloc.dart';
@@ -121,6 +123,16 @@ class DI {
       ),
     );
 
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepository(),
+    );
+
+    sl.registerFactory(
+      () => AuthCubit(
+        authRepository: sl(),
+      ),
+    );
+
     sl.registerLazySingleton<StreakRepository>(
       () => StreakRepositoryImpl(
         pairStorage: sl(),
@@ -139,7 +151,7 @@ class DI {
 
     sl.registerLazySingleton<TranslationData>(
       () => GoogleTranslateData(
-        dio: sl(),
+        dio: sl(instanceName: 'TranslationDio'),
       ),
     );
 
@@ -154,6 +166,14 @@ class DI {
       () => TranslationDio(
         connectivity: Connectivity(),
       ).dio,
+      instanceName: 'TranslationDio',
+    );
+
+    sl.registerLazySingleton<Dio>(
+      () => BackendDio(
+        connectivity: Connectivity(),
+      ).dio,
+      instanceName: 'BackendDio',
     );
 
     sl.registerLazySingleton<LocalNotificationsTools>(

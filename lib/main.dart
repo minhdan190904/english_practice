@@ -19,6 +19,7 @@ import 'data/repositories/oxford_words_repository.dart';
 import 'navigation/app_router.dart';
 import 'ui/blocs/iap/iap_bloc.dart';
 import 'ui/blocs/translate/translate_cubit.dart';
+import 'ui/blocs/auth/auth_cubit.dart';
 import 'ui/screens/settings/bloc/settings_bloc.dart';
 import 'utils/ad/consent_manager.dart';
 import 'utils/global_values.dart';
@@ -104,6 +105,9 @@ void main() async {
       providers: [
         BlocProvider(
           create: (context) => DI().sl<SettingsBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => DI().sl<AuthCubit>(),
         ),
         BlocProvider(
           create: (context) => DI().sl<IapBloc>(),

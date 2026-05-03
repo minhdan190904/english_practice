@@ -19,6 +19,9 @@ import 'bloc/settings_bloc.dart';
 import 'widgets/profile_field.dart';
 import 'widgets/theme_item.dart';
 
+import '../../blocs/auth/auth_cubit.dart';
+import '../../blocs/auth/auth_state.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -52,6 +55,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isGrantedNotificationsPermission = context.watch<NotificationsBloc>().state.isNotificationsGranted;
     final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+    final authState = context.watch<AuthCubit>().state;
+
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
         final settingsSnapshot = state.settingsSnapshot;
@@ -71,6 +76,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(height: 16),
+                            if (authState.user != null)
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: authState.user?.photoURL != null
+                                        ? NetworkImage(authState.user!.photoURL!)
+                                        : null,
+                                    child: authState.user?.photoURL == null
+                                        ? const Icon(Icons.person, size: 30)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          authState.user?.displayName ?? 'No Name',
+                                          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          authState.user?.email ?? '',
+                                          style: textTheme.bodyMedium,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.logout),
+                                    onPressed: () {
+                                      context.read<AuthCubit>().signOut();
+                                    },
+                                  )
+                                ],
+                              )
+                            else
+                              RoundedButton(
+                                onPressed: () {
+                                  context.read<AuthCubit>().signInWithGoogle();
+                                },
+                                borderRadius: 16,
+                                child: authState.isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.login),
+                                          SizedBox(width: 8),
+                                          Text("Sign in with Google"),
+                                        ],
+                                      ),
+                              ),
+                            const SizedBox(height: 24),
                             VocabularyItem(
                               word: Words.sampleWord,
                               onMastered: _onMastered,
