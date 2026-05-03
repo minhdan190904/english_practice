@@ -25,6 +25,7 @@ import '../ui/screens/streak/streak_screen.dart';
 import '../ui/screens/vocabulary/bloc/vocabulary_bloc.dart';
 import '../ui/screens/vocabulary/vocabulary_screen.dart';
 import '../ui/screens/vocabulary/word_details_screen.dart';
+import '../ui/screens/ai_lesson/ai_lesson_screen.dart';
 
 part 'route_paths.dart';
 
@@ -155,11 +156,11 @@ class AppRouter {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: RoutePaths.streak,
+              path: RoutePaths.aiLesson,
               pageBuilder: (context, state) {
                 return NoTransitionPage(
                   key: state.pageKey,
-                  child: const StreakScreen(),
+                  child: const AiLessonScreen(),
                 );
               },
             ),
@@ -183,6 +184,15 @@ class AppRouter {
           return NoTransitionPage(
             key: state.pageKey,
             child: const OnboardingScreen(),
+          );
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.streak,
+        pageBuilder: (context, state) {
+          return SwipeablePage(
+            key: state.pageKey,
+            builder: (context) => const StreakScreen(),
           );
         },
       ),

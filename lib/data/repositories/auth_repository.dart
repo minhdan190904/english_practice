@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -22,12 +24,26 @@ class AuthRepository {
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      final OAuthCredential credential = GoogleAuthProvider.credential(
+      final OAuthCredential credentialObj = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      return await _firebaseAuth.signInWithCredential(credential);
+      final credential = await _firebaseAuth.signInWithCredential(credentialObj);
+
+      // Trigger the backend to register/sync the user
+      try {
+        final token = await credential.user?.getIdToken();
+        if (token != null) {
+          final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
+          await dio.get('/users/me'); // This will trigger FirebaseTokenFilter on backend
+        }
+      } catch (e) {
+        // Just log or ignore backend sync error, user is still logged in locally
+        print('Backend sync error: $e');
+      }
+
+      return credential;
     } catch (e) {
       throw Exception('Failed to sign in with Google: $e');
     }

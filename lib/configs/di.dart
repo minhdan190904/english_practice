@@ -17,6 +17,7 @@ import '../data/repositories/notifications_repository.dart';
 import '../data/repositories/oxford_words_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/ai_repository.dart';
 import '../data/repositories/streak_repository.dart';
 import '../ui/blocs/auth/auth_cubit.dart';
 import '../ui/blocs/iap/iap_bloc.dart';
@@ -125,6 +126,10 @@ class DI {
 
     sl.registerLazySingleton<AuthRepository>(
       () => AuthRepository(),
+    );
+
+    sl.registerLazySingleton<AiRepository>(
+      () => AiRepository(dio: sl(instanceName: 'BackendDio')),
     );
 
     sl.registerFactory(

@@ -13,4 +13,5 @@ class RoutePaths {
   static const String grammar = '/grammar';
   static const String category = '/category';
   static const String lesson = '/lesson';
+  static const String aiLesson = '/ai_lesson';
 }
