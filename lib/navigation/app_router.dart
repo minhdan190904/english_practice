@@ -119,6 +119,17 @@ class AppRouter {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
+              path: RoutePaths.aiLesson,
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  key: state.pageKey,
+                  child: const AiLessonScreen(),
+                );
+              },
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
               path: RoutePaths.grammar,
               pageBuilder: (context, state) {
                 return NoTransitionPage(
@@ -150,17 +161,6 @@ class AppRouter {
                   builder: (context) => LessonScreen(
                     lesson: lesson,
                   ),
-                );
-              },
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: RoutePaths.aiLesson,
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: const AiLessonScreen(),
                 );
               },
             ),
