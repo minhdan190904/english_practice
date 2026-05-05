@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "200027552536-hk9vonuoqevfckfd6sh0q1nrcfduip13.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.minhdan.english_practice",
+            "certificate_hash": "0fe02677939d1b496b7aa009810e5778c3fd0f02"
+          }
+        },
+        {
           "client_id": "200027552536-r99i16l88gbivk1i7mt15i7hk8qk0mlh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
