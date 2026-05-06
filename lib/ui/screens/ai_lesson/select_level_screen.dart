@@ -11,6 +11,7 @@ class SelectLevelScreen extends StatefulWidget {
 class _SelectLevelScreenState extends State<SelectLevelScreen> {
   late String _selected;
 
+  final List<_LevelInfo> _levels = [
     _LevelInfo('A1', 'Beginner', 'Can understand very basic phrases and expressions. Limited vocabulary.', Colors.green),
     _LevelInfo('A2', 'Elementary', 'Can communicate in simple situations about familiar topics. Basic vocabulary and grammar.', Colors.teal),
     _LevelInfo('B1', 'Intermediate', 'Can deal with most travel and personal situations. Can describe experiences and events.', Colors.blue),
