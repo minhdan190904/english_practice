@@ -62,7 +62,7 @@ class BackendDio extends AppDio {
   Dio _get() {
     return Dio()
       ..options = BaseOptions(
-        baseUrl: "http://34.31.76.129:8080/api/v1",
+        baseUrl: "https://rash-boasting-neon.ngrok-free.dev/api/v1",
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
