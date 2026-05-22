@@ -18,6 +18,7 @@ import '../vocabulary/widgets/vocabulary_item.dart';
 import 'bloc/settings_bloc.dart';
 import 'widgets/profile_field.dart';
 import 'widgets/theme_item.dart';
+import '../../../utils/l10n.dart';
 
 import '../../blocs/auth/auth_cubit.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -61,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, state) {
         final settingsSnapshot = state.settingsSnapshot;
         return BasePage(
-          title: "Settings",
+          title: L10n.tr(context, "settings"),
           padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,10 +128,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       )
                                     : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
-                                          Icon(Icons.login),
-                                          SizedBox(width: 8),
-                                          Text("Sign in with Google"),
+                                        children: [
+                                          const Icon(Icons.login),
+                                          const SizedBox(width: 8),
+                                          Text(L10n.tr(context, "sign_in_with_google")),
                                         ],
                                       ),
                               ),
@@ -142,7 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               viewOnly: true,
                             ),
                             Text(
-                              "Color",
+                              L10n.tr(context, "color"),
                               style: textTheme.titleMedium?.copyWith(
                                 color: colorScheme.secondary.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.bold,
@@ -197,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             const SizedBox(height: 16),
                             Text(
-                              "Theme",
+                              L10n.tr(context, "theme"),
                               style: textTheme.titleMedium?.copyWith(
                                 color: colorScheme.secondary.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.bold,
@@ -241,21 +242,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                             ),
                             const SizedBox(height: 16),
+                            // Language Selector
+                            Text(
+                              L10n.tr(context, "language"),
+                              style: textTheme.titleMedium?.copyWith(
+                                color: colorScheme.secondary.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLanguageTile(context, settingsSnapshot.locale, colorScheme, textTheme),
+                            const SizedBox(height: 16),
                             ProfileField(
                               onPressed: _openContactMail,
-                              title: "Contact us",
-                              value:
-                                  "If you have any questions or suggestions, please contact us for support. We will respond as soon as possible.",
+                              title: L10n.tr(context, "contact_us"),
+                              value: L10n.tr(context, "contact_us_desc"),
                             ),
                             Divider(),
                             ProfileField(
                               onPressed: _openTermsOfUse,
-                              title: "Terms of Use",
+                              title: L10n.tr(context, "terms_of_use"),
                             ),
                             Divider(),
                             ProfileField(
                               onPressed: _openPrivacyPolicy,
-                              title: "Privacy Policy",
+                              title: L10n.tr(context, "privacy_policy"),
                             ),
                           ],
                         ),
@@ -281,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Text("Enable Notifications"),
+                        Text(L10n.tr(context, "enable_notifications")),
                       ],
                     ),
                   ),
@@ -350,6 +361,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
             seek: value,
           ),
         );
+  }
+
+  void _onChangeLocale(BuildContext context, String locale) {
+    context.read<SettingsBloc>().add(
+          SettingsEvent.saveSettings(locale: locale),
+        );
+  }
+
+  Widget _buildLanguageTile(BuildContext context, String currentLocale, ColorScheme colorScheme, TextTheme textTheme) {
+    final isVi = currentLocale == 'vi';
+    return GestureDetector(
+      onTap: () => _onChangeLocale(context, isVi ? 'en' : 'vi'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.2), width: 1.5),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Text(
+              isVi ? '🇻🇳' : '🇬🇧',
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isVi ? 'Tiếng Việt' : 'English',
+                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  isVi ? 'Giải thích ngữ pháp bằng tiếng Việt' : 'Grammar explained in English',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Icon(
+              Icons.swap_horiz_rounded,
+              color: colorScheme.primary,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openNotificationsSettings() {

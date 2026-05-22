@@ -19,17 +19,21 @@ class SettingsSnapshotAdapter extends TypeAdapter<SettingsSnapshot> {
     return SettingsSnapshot(
       seek: fields[0] as int,
       themeMode: fields[1] as int,
+      // Backward compatible: nếu user cũ chưa có field 2 thì dùng 'en'
+      locale: fields[2] as String? ?? 'en',
     );
   }
 
   @override
   void write(BinaryWriter writer, SettingsSnapshot obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.seek)
       ..writeByte(1)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(2)
+      ..write(obj.locale);
   }
 
   @override
@@ -52,6 +56,7 @@ _$SettingsSnapshotImpl _$$SettingsSnapshotImplFromJson(
     _$SettingsSnapshotImpl(
       seek: (json['seek'] as num?)?.toInt() ?? 0X2196F3,
       themeMode: (json['theme_mode'] as num?)?.toInt() ?? 0,
+      locale: json['locale'] as String? ?? 'en',
     );
 
 Map<String, dynamic> _$$SettingsSnapshotImplToJson(
@@ -59,4 +64,5 @@ Map<String, dynamic> _$$SettingsSnapshotImplToJson(
     <String, dynamic>{
       'seek': instance.seek,
       'theme_mode': instance.themeMode,
+      'locale': instance.locale,
     };

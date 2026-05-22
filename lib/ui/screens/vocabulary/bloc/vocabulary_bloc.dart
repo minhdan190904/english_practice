@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../data/models/word.dart';
 import '../../../../data/models/word_status.dart';
 import '../../../../data/repositories/oxford_words_repository.dart';
+import '../../../../data/repositories/progress_repository.dart';
 
 part 'vocabulary_event.dart';
 
@@ -14,10 +15,13 @@ part 'generated/vocabulary_bloc.freezed.dart';
 
 class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
   final OxfordWordsRepository _oxfordWordsRepository;
+  final ProgressRepository _progressRepository;
 
   VocabularyBloc({
     required OxfordWordsRepository oxfordWordsRepository,
+    required ProgressRepository progressRepository,
   })  : _oxfordWordsRepository = oxfordWordsRepository,
+        _progressRepository = progressRepository,
         super(const VocabularyState()) {
     on<VocabularyEvent>((event, emit) async {
       await event.map(
@@ -51,6 +55,14 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     }).toList();
     _oxfordWordsRepository.saveWord(newWord);
     emit(state.copyWith(words: words));
+    
+    if (event.status == WordStatus.mastered && event.word.status != WordStatus.mastered) {
+      _progressRepository.logSession(
+        timeSpentSeconds: 0,
+        wordsLearned: 1,
+        lessonsCompleted: 0,
+      );
+    }
   }
 
   _onEditDefinition(_EditDefinition event, Emitter<VocabularyState> emit) {

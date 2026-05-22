@@ -13,6 +13,8 @@ class SettingsSnapshot with _$SettingsSnapshot {
   const factory SettingsSnapshot({
     @HiveField(0) @Default(0X2196F3) int seek,
     @HiveField(1) @Default(0) int themeMode,
+    /// 'en' = English (default), 'vi' = Vietnamese
+    @HiveField(2) @Default('en') String locale,
   }) = _SettingsSnapshot;
 
   factory SettingsSnapshot.fromJson(Map<String, dynamic> json) => _$SettingsSnapshotFromJson(json);

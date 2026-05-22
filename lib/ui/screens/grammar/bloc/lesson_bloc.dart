@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../data/repositories/lesson_repository.dart';
+import '../../../../data/repositories/progress_repository.dart';
 
 part 'lesson_event.dart';
 
@@ -11,10 +12,13 @@ part 'generated/lesson_bloc.freezed.dart';
 
 class LessonBloc extends Bloc<LessonEvent, LessonState> {
   final LessonRepository _lessonRepository;
+  final ProgressRepository _progressRepository;
 
   LessonBloc({
     required LessonRepository lessonRepository,
+    required ProgressRepository progressRepository,
   })  : _lessonRepository = lessonRepository,
+        _progressRepository = progressRepository,
         super(const LessonState()) {
     on<LessonEvent>((event, emit) async {
       await event.map(
@@ -43,7 +47,14 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
       (_) {
         final message = event.isMarked ? 'Lesson marked' : null;
         emit(state.copyWith(markedLessons: markedLessons, message: message));
-        if (message != null) emit(state.copyWith(message: null));
+        if (message != null) {
+          emit(state.copyWith(message: null));
+          _progressRepository.logSession(
+            timeSpentSeconds: 0,
+            wordsLearned: 0,
+            lessonsCompleted: 1,
+          );
+        }
       },
     );
   }

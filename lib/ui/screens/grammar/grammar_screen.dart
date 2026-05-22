@@ -10,6 +10,7 @@ import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import 'bloc/lesson_bloc.dart';
 import 'widget/home_item.dart';
+import '../../../utils/l10n.dart';
 
 class GrammarScreen extends StatefulWidget {
   final List<CategoryData> categories = [
@@ -134,7 +135,7 @@ class _GrammarScreenState extends State<GrammarScreen> {
           return category.copyWith(progress: progress, total: total);
         }).toList();
         return BasePage(
-          title: "Grammar",
+          title: L10n.tr(context, 'grammar'),
           child: ListView.builder(
             itemCount: categories.length,
             itemBuilder: (context, index) {

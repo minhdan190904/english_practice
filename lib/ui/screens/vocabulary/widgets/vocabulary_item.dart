@@ -52,6 +52,9 @@ class VocabularyItem extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  // SRS status dot indicator: xám=unknown, amber=studying, xanh=mastered
+                  _buildStatusDot(word.status, colorScheme),
+                  const SizedBox(width: 6),
                   SelectableText(
                     word.word,
                     style: textTheme.titleLarge?.copyWith(
@@ -219,9 +222,32 @@ class VocabularyItem extends StatelessWidget {
   }
 
   void _onSaveDefinition(BuildContext context, String? definition) {
-    if (definition != null && definition.isEmpty) {
-      return;
-    }
+    if (definition != null && definition.isEmpty) return;
     context.read<VocabularyBloc>().add(VocabularyEvent.editDefinition(word, definition));
+  }
+
+  /// Dot nhỏ thể hiện SRS level của từ:
+  /// xám = unknown, amber = studying (star), xanh = mastered
+  Widget _buildStatusDot(WordStatus status, ColorScheme colorScheme) {
+    Color dotColor;
+    switch (status) {
+      case WordStatus.unknown:
+        dotColor = Colors.grey.withValues(alpha: 0.5);
+        break;
+      case WordStatus.star:
+        dotColor = Colors.amber;
+        break;
+      case WordStatus.mastered:
+        dotColor = Colors.green;
+        break;
+    }
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(
+        color: dotColor,
+        shape: BoxShape.circle,
+      ),
+    );
   }
 }

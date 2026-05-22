@@ -4,6 +4,11 @@
 
 Kế hoạch nâng cấp app **English Practice** từ một app học từ vựng cơ bản thành một nền tảng học tiếng Anh toàn diện cho người Việt. Bao gồm 6 phase chính.
 
+> [!IMPORTANT]
+> **NGUYÊN TẮC BẮT BUỘC — ĐỌC TRƯỚC KHI LÀM**
+> 1. **Không thay đổi UI Style hiện tại**: Giữ nguyên 100% phong cách thiết kế, màu sắc, font chữ, và các component hiện có (`BasePage`, `RoundedButton`, `VocabularyItem`, `BottomNavigationBar`, ...). Màn hình mới phải tái sử dụng lại các widget đang có. Không áp dụng Material 3, không thêm gradient mới, không đổi font.
+> 2. **Build được sau mỗi Phase**: Cuối mỗi phase, app **bắt buộc phải build thành công và chạy bình thường**. Không được break tính năng của phase trước. Thêm tính năng mới theo dạng module hóa, tách biệt hoàn toàn.
+
 ### Kiến trúc hiện tại (đã nghiên cứu)
 
 | Layer | Tech |
@@ -14,15 +19,24 @@ Kế hoạch nâng cấp app **English Practice** từ một app học từ vự
 | **Client** | Flutter + BLoC + Freezed + GoRouter |
 | **Grammar** | 37 markdown files bundled trong `assets/md/grammar/` (LOCAL, không qua API) |
 | **Vocabulary** | Oxford JSON files (~14MB trên server) + category JSON files (~12MB) |
-| **IAP** | `in_app_purchase` package + Backend Verification (kiểm tra orderId chống hack) |
-| **Ads** | `google_mobile_ads`: BannerAd + RewardedAd (đã implement) |
+| **IAP** | `in_app_purchase` package — **client-side only**, backend chưa có gì |
+| **Ads** | `google_mobile_ads`: BannerAd + RewardedAd + AppOpenAd (đã implement) |
+
+> [!WARNING]
+> **PHÁT HIỆN QUAN TRỌNG TỪ CODEBASE — ảnh hưởng trực tiếp đến plan:**
+> - **Oxford words JSON không có field `level`** — chỉ có category_words JSON mới có `level` (A1-C2). Filter CEFR trên Vocabulary screen chỉ áp dụng được cho từ thuộc category_words.
+> - **IAP backend = ZERO** — hiện tại không có một dòng code IAP nào trên backend. Cần build từ đầu hoàn toàn.
+> - **SettingsSnapshot (Hive typeId=4)** hiện chỉ có 2 field: `seek` (màu) và `themeMode`. Để thêm locale cần thêm `@HiveField(2)` và regenerate adapter. IDs 0–5 đã dùng, ID tiếp theo là **6+**.
+> - **Bug premium check**: `home_navigation.dart` check `boughtNoAdsTime == -1` (chỉ permanent), trong khi các screen khác check `!= null` (cả permanent lẫn temporary). Cần thống nhất.
+> - **Vocab stats**: Dữ liệu từ vựng của user lưu trong **Hive local** (`Box<Word>`). Progress screen không cần gọi backend để lấy stats vocab — đọc thẳng từ `VocabularyBloc` (đã có data trong Hive).
+> - **`VertexSamplePassageService`** đang hard-code `projectId = "gen-lang-client-0619494454"` thay vì đọc từ properties — cần fix khi đụng vào backend.
 
 ```mermaid
 gantt
-    title Lộ Trình Phát Triển
+    title Lộ Trình Phát Triển (Build được sau mỗi Phase)
     dateFormat  YYYY-MM-DD
     section Phase 1
-    UI/UX Restructure           :p1, 2026-05-21, 5d
+    Layout & Flow Update         :p1, 2026-05-22, 5d
     section Phase 2
     Vietnamese Localization      :p2, after p1, 4d
     section Phase 3
@@ -74,9 +88,20 @@ gantt
 
 ---
 
-## Phase 1: UI/UX Restructure — Tái cấu trúc giao diện
+## Phase 1: Layout & Flow Update — Tái cấu trúc luồng người dùng
 
-Mục tiêu: Nâng cấp UI hiện đại premium, sắp xếp lại navigation hợp lý hơn.
+Mục tiêu: Đổi lại bố cục navigation và luồng màn hình hợp lý hơn. **Giữ nguyên hoàn toàn UI style hiện tại.** App phải build và chạy bình thường sau phase này.
+
+**Bố cục thay đổi:**
+| Tab cũ (Index) | Tab mới | Thay đổi |
+|---|---|---|
+| 0 - Vocabulary | Vocabulary | Thêm nút "Start Review" vào đầu danh sách |
+| 1 - Studying | AI Lessons | Dịch chuyển tab AI sang đây, xóa tab Studying |
+| 2 - AI | Progress | Tab mới thống kê tiến trình |
+| 3 - Grammar | Grammar | Giữ nguyên |
+| 4 - Settings | Settings | Giữ nguyên |
+
+**Flow thay đổi:** Ôn tập Flashcards (trước ở tab Studying) nay vào từ nút "Start Review" trong tab Vocabulary.
 
 ---
 
@@ -84,13 +109,11 @@ Mục tiêu: Nâng cấp UI hiện đại premium, sắp xếp lại navigation 
 
 #### [MODIFY] [home_navigation.dart](file:///C:/english_practice/english_practice_client/lib/ui/screens/home_navigation/home_navigation.dart)
 - Thay đổi thứ tự tabs: **Vocabulary → AI → Progress → Grammar → Settings**
-- Thay icon/label tab "Studying" → "AI" (icon `smart_toy`)
-- Tab "AI" cũ → "Progress" (icon `insights`)
-- Upgrade `BottomNavigationBar` → `NavigationBar` (Material 3) với:
-  - Animated indicator
-  - Rounded selected icon background
-  - Label chỉ hiện khi chọn (giảm clutter)
-- Cập nhật `routes`, `icons`, `labels` arrays
+- Đổi icon/label tab "Studying" (index 1) → "AI" (dùng icon `smart_toy` có sẵn)
+- Đổi icon/label tab "AI" cũ (index 2) → "Progress" (dùng icon `insights` có sẵn)
+- **KHÔNG** đổi sang `NavigationBar` Material 3. Giữ nguyên `BottomNavigationBar` hiện tại.
+- Cập nhật `routes`, `icons`, `labels` arrays và điều kiện hiển thị `floatingActionButton`
+- **[BUG FIX]** Thống nhất premium check: đổi `state.boughtNoAdsTime == -1` → `state.boughtNoAdsTime != null` (line ~105) để nhất quán với các screen khác.
 
 #### [MODIFY] [app_router.dart](file:///C:/english_practice/english_practice_client/lib/navigation/app_router.dart)
 - Thêm route cho Progress screen: `/progress`
@@ -102,49 +125,27 @@ Mục tiêu: Nâng cấp UI hiện đại premium, sắp xếp lại navigation 
 
 ---
 
-### 1.2 AI Lesson Screen (Nâng cấp tab AI)
+### 1.2 AI Lesson Screen (Di chuyển sang vị trí tab cũ của Studying)
 
 #### [MODIFY] [ai_lesson_screen.dart](file:///C:/english_practice/english_practice_client/lib/ui/screens/ai_lesson/ai_lesson_screen.dart)
-- Redesign từ empty state đơn giản → Dashboard AI lessons:
-  - **Hero Section**: Gradient card với lời chào + AI illustration
-  - **Quick Actions Row**: Nút "New Lesson" + "Browse Topics"
-  - **Category Grid**: Hiển thị 18 categories dưới dạng grid cards 2×3 (scrollable)
-  - **Recent Lessons**: Hiển thị 3 bài gần nhất nếu có
-- Thêm skeleton loading
-
-#### [MODIFY] [select_topic_screen.dart](file:///C:/english_practice/english_practice_client/lib/ui/screens/ai_lesson/select_topic_screen.dart)
-- Chuyển categories từ `ListView` → `GridView` 2 cột
-- Thêm animation khi chọn category
+- Dùng lại `BasePage` làm khung như các màn hình khác.
+- Hiển thị nút "New Lesson" bằng `RoundedButton` hiện tại.
+- Hiển thị Recent Lessons (nếu có) theo style list của `CategoryItem` đang dùng trong Grammar.
+- **Không** thêm Gradient card, Hero section, hay animation mới.
 
 ---
 
 ### 1.3 Vocabulary Screen cải thiện
 
 #### [MODIFY] [vocabulary_screen.dart](file:///C:/english_practice/english_practice_client/lib/ui/screens/vocabulary/vocabulary_screen.dart)
-- Thêm **stats bar** trên cùng: tổng từ / starred / mastered
-- Thêm **CEFR level filter** chips (A1→C2) bên cạnh filter hiện tại
-- Thêm nút **"Start Review"** nổi bật khi có từ starred cần review
-- Thêm debounce cho search
+- Thêm **stats bar** trên cùng: tổng từ / starred / mastered (đọc từ `VocabularyBloc` — data có sẵn trong Hive)
+- ~~Thêm CEFR level filter chips (A1→C2)~~ → **KHÔNG làm được với Oxford words** vì `oxford_words/*.json` không có field `level`. CEFR filter chỉ áp dụng khi browse `category_words` (Phase 4).
+- Thêm nút **"Start Review"** nổi bật khi có từ starred cần review (navigate đến `/flashcards`)
+- Thêm debounce cho search (dùng `Debouncer` class đã có sẵn trong `lib/core/debouncer.dart`)
 
 #### [MODIFY] [vocabulary_item.dart](file:///C:/english_practice/english_practice_client/lib/ui/screens/vocabulary/widgets/vocabulary_item.dart)
 - Thêm Vietnamese meaning dưới definition (khi locale = vi)
 - Hiển thị SRS level indicator nhỏ (dot: new/learning/mastered)
-
----
-
-### 1.4 Theme & Design System
-
-#### [MODIFY] [app.dart](file:///C:/english_practice/english_practice_client/lib/app.dart)
-- Thêm Google Fonts (Inter hoặc Outfit)
-- Cải thiện `ColorScheme`:
-  - Surface tones tinh tế hơn
-  - Custom `CardTheme` với rounded corners + subtle shadows
-  - Custom `AppBarTheme` (transparent, no elevation)
-  - Custom `InputDecorationTheme` (rounded, outlined)
-- Nâng cấp typography scale
-
-#### [MODIFY] [pubspec.yaml](file:///C:/english_practice/english_practice_client/pubspec.yaml)
-- Thêm `google_fonts` package
 
 ---
 
@@ -267,10 +268,14 @@ assets/md/grammar_vi/
   - Tap → chọn ngôn ngữ
 - Lưu vào `SharedPreferences`
 
+#### [MODIFY] `lib/data/models/settings_snapshot.dart`
+- Thêm `@HiveField(2) @Default('vi') String locale` vào class (Hive IDs 0-5 đã dùng, field mới dùng ID 2 tiếp theo sau themeMode)
+- Chạy lại `flutter pub run build_runner build` để regenerate `settings_snapshot.g.dart`
+
 #### [MODIFY] `settings_bloc.dart` / `settings_state.dart` / `settings_event.dart`
-- Thêm `String locale` vào state (mặc định `'vi'`)
-- Thêm event `changeLocale(String locale)`
-- Persist trong `SettingsSnapshot`
+- Thêm `String locale` vào state (mặc định `'vi'`, đọc từ `SettingsSnapshot.locale`)
+- Thêm event `changeLocale(String locale)` → update `SettingsSnapshot.locale` trong Hive
+- **Lưu ý**: `SettingsBloc` là **Factory** (không phải singleton) → locale cần được truyền xuống qua `MaterialApp.locale` từ `App` widget
 
 ---
 
@@ -283,29 +288,26 @@ Mục tiêu: User thấy rõ progress, tạo động lực học tiếp.
 ### 3.1 Progress Screen (Tab mới)
 
 #### [NEW] `lib/ui/screens/progress/progress_screen.dart`
-- **Header Card**: Streak hiện tại + circular timer (thời gian học hôm nay / 5 phút goal)
+- **Header Card**: Streak hiện tại + circular timer (thời gian học hôm nay vs daily goal)
 - **Vocabulary Stats Card**:
-  - Total words / Unknown / Starred / Mastered
-  - Horizontal progress bars theo status
-  - CEFR level breakdown (mini pie chart)
+  - Total words / Starred / Mastered (data từ **Hive local** `Box<Word>`, không cần API)
+  - Horizontal progress bars theo WordStatus enum: `unknown`, `star`, `mastered`
+  - ~~CEFR level breakdown~~ → bỏ vì Oxford words không có field `level`
 - **Grammar Progress Card**:
-  - X/37 lessons completed (progress ring)
-  - Categories breakdown
+  - X/37 lessons completed (đọc từ `LessonBloc.markedLessons` — đã lưu trong SharedPrefs)
+  - Categories breakdown (Tenses/Sentences/Words/Others)
 - **AI Lessons Stats Card**:
-  - Tổng lessons đã tạo
-  - Từ vựng đã học từ AI
-- **Weekly Activity Bar Chart**:
-  - 7 ngày gần nhất, mỗi bar = thời gian học
-- **Streak Calendar**:
-  - Heatmap style (giống GitHub contributions)
-  - Tháng hiện tại
+  - Tổng lessons đã tạo (cần thêm counter local)
+- **Weekly Activity** (đơn giản hóa):
+  - Hiển thị streak 7 ngày gần nhất từ `StreakBloc` data (đã có trong SharedPrefs)
+  - Không cần backend API cho chart này
 
 #### [NEW] `lib/ui/screens/progress/bloc/progress_bloc.dart`
 #### [NEW] `lib/ui/screens/progress/bloc/progress_event.dart`
 #### [NEW] `lib/ui/screens/progress/bloc/progress_state.dart`
-- State: `VocabStats`, `GrammarStats`, `WeeklyActivity[]`, `StreakCalendar`
+- State: `VocabStats`, `GrammarStats`, `weeklyStreak[]`
 - Events: `loadProgress`, `refreshProgress`
-- Data sources: aggregate từ `VocabularyBloc`, `LessonBloc` (grammar marks), `StreakBloc`
+- **Data sources (quan trọng)**: Toàn bộ dữ liệu lấy LOCAL — `VocabularyBloc` (Hive), `LessonBloc` (SharedPrefs), `StreakBloc` (SharedPrefs). **Không cần gọi backend API nào cho Phase 3 client-side.**
 
 #### [NEW] `lib/ui/screens/progress/widgets/stats_card.dart`
 - Reusable card với title, icon, value, progress bar
@@ -344,17 +346,14 @@ public class StudySession {
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/progress/summary` | Tổng hợp stats |
-| GET | `/api/v1/progress/weekly` | Activity 7 ngày gần nhất |
-| GET | `/api/v1/progress/calendar?month=` | Streak calendar cho tháng |
-| POST | `/api/v1/progress/log-session` | Client log study session |
+| POST | `/api/v1/progress/log-session` | Client log study session (thời gian học mỗi ngày) |
+
+> [!NOTE]
+> **Đơn giản hóa backend Phase 3**: Vocabulary stats và Grammar stats đọc từ local Hive/SharedPrefs, không cần backend endpoint. Chỉ cần `POST /log-session` để ghi lịch sử học vào DB cho analytics sau này.
 
 #### [NEW] Backend: `src/service/ProgressService.java` + `impl/ProgressServiceImpl.java`
 
-#### Client: [NEW] `lib/data/datasources/progress_remote_data_source.dart`
-#### Client: [NEW] `lib/data/repositories/progress_repository.dart`
-#### Client: [NEW] `lib/data/models/progress_summary.dart`
-#### Client: [NEW] `lib/data/models/study_session.dart`
+#### Client: [NEW] `lib/data/models/study_session.dart` (local model cho log session)
 
 ---
 
@@ -377,18 +376,18 @@ private LocalDateTime masteredAt; // khi master
 
 ## Phase 4: AI Category Vocabulary — Học từ theo chủ đề AI
 
-Mục tiêu: Tận dụng 18 AI categories + category JSON files để tạo hệ thống học có tổ chức.
+Mục tiêu: Tận dụng 18 AI categories + category JSON files (đã có sẵn trên server tại `resources/json/category_words/`) để tạo hệ thống học có tổ chức. Các file này **có đầy đủ `level` (A1-C2) và `category` fields** — đây là nơi duy nhất có CEFR level data.
 
 ---
 
 ### 4.1 Category-based Vocabulary Browser
 
 #### [NEW] `lib/ui/screens/ai_lesson/category_words_screen.dart`
-- Hiển thị danh sách từ vựng trong 1 category (từ server JSON)
-- Filter theo CEFR level (A1-C2)
-- Mỗi từ: word, phonetic, definition, example, status (learned/not)
-- Nút "Add to My Words" / "Remove"
-- Nút "Generate Lesson" → tạo AI lesson từ category đó
+- Hiển thị danh sách từ vựng trong 1 category (từ server JSON `category_words/`)
+- **Filter theo CEFR level (A1-C2)** — hoạt động được vì category_words có field `level`
+- Mỗi từ: word, phonetic (phonetic_text), definition, example — map sang model `VocabularyWord` hiện có trên backend
+- Nút "Add to My Words" → gọi API `/vocabularies/sync` (đã có) để thêm vào `user_vocabularies`
+- Nút "Generate Lesson" → tạo AI lesson từ category đó (gọi `/ai/generate-lesson`)
 
 #### Backend: [NEW] `src/controller/CategoryVocabularyController.java`
 
@@ -420,7 +419,10 @@ Mục tiêu: Tận dụng 18 AI categories + category JSON files để tạo h�
 
 ## Phase 5: IAP & Ads Backend — Hoàn thiện mua hàng & quảng cáo
 
-Mục tiêu: Server-side verification cho IAP, optimize ads.
+Mục tiêu: Build IAP backend từ đầu (hiện tại **ZERO implementation** trên backend) và tối ưu hóa ads.
+
+> [!CAUTION]
+> **IAP backend = 0 dòng code.** Cần build hoàn toàn mới: Entity `Purchase`, Repository, Controller, Service, tích hợp Google Play Developer API. Đây là phase tốn effort nhất.
 
 ---
 
@@ -467,15 +469,14 @@ public class Purchase {
 ### 5.2 Client: IAP improvements
 
 #### [MODIFY] [iap_bloc.dart](file:///C:/english_practice/english_practice_client/lib/ui/blocs/iap/iap_bloc.dart)
-- Sau purchase thành công → gọi `POST /api/v1/purchases/verify`
-- Tuyệt đối không fallback: Nếu backend trả về verify fail hoặc phát hiện orderId giả mạo, hủy bỏ nâng cấp Premium ngay lập tức, hiển thị lỗi giao dịch.
+- Sau purchase thành công (stream `_processPurchase`) → gọi `POST /api/v1/purchases/verify` trước khi gọi `GlobalValues.setBoughtNoAdsTime()`
+- Nếu backend verify **thành công** → set premium bình thường
+- Nếu backend verify **thất bại** (orderId giả, token invalid) → không set premium, gọi `InAppPurchase.instance.completePurchase()` để clear queue, hiển thị error message
+- Nếu backend **không trả lời** (network error) → graceful degradation: tạm thời allow premium và retry verify khi có mạng (tránh block user hợp lệ)
 
 #### [MODIFY] [paywall_dialog.dart](file:///C:/english_practice/english_practice_client/lib/ui/commons/dialogs/paywall_dialog.dart)
-- Redesign UI:
-  - Feature comparison table (Free vs Premium)
-  - Animated gradient background
-  - Trial period highlight
-  - Testimonials/social proof
+- Thêm bảng so sánh tính năng Free vs Premium vào nội dung dialog hiện tại.
+- Giữ nguyên style layout của dialog, không thay đổi màu sắc hay animation.
 
 ---
 
@@ -695,7 +696,14 @@ public class Purchase {
 
 ## Verification Plan
 
-### Build & Test
+### ⚠️ Build Constraint (Áp dụng SAU MỖI PHASE)
+> Cuối mỗi phase phải pass toàn bộ 4 bước kiểm tra sau trước khi sang phase tiếp theo:
+> 1. `./gradlew build` (Backend) → **Phải thành công**
+> 2. `flutter build apk --debug` (Client) → **Phải thành công, không lỗi đỏ**
+> 3. **UI Check**: Không có màn hình nào thay đổi màu sắc, font, layout so với style gốc
+> 4. **Data Check**: Tài khoản cũ, từ vựng đã lưu, bài học đã mark vẫn hiển thị đúng
+
+### Build & Test Commands
 ```bash
 # Backend
 cd english_practice_backend
@@ -710,13 +718,13 @@ flutter build apk --debug
 ```
 
 ### Manual Verification Checklist
+- [ ] Navigation mới: 5 tab chuyển đổi mượt mà, không crash
+- [ ] Flow Flashcard mới: Bấm "Start Review" trong Vocabulary → mở FlashCard bình thường
 - [ ] Chuyển đổi ngôn ngữ EN ↔ VI trên tất cả screens
 - [ ] Grammar lessons hiển thị đúng tiếng Việt, toggle EN/VI hoạt động
 - [ ] Progress dashboard hiển thị đúng data từ vocabulary + grammar
 - [ ] AI lesson generation + category browsing hoạt động
 - [ ] IAP flow: mua → verify → unlock features
 - [ ] Ads hiển thị đúng vị trí, Premium user không thấy ads
-- [ ] Navigation mới 5 tab hoạt động smooth
 - [ ] Dark mode tương thích tất cả screens mới
-- [ ] Responsive trên nhiều screen sizes
 - [ ] Offline mode (Premium): cache data, hoạt động không internet

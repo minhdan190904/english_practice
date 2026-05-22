@@ -37,6 +37,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final settingsSnapshot = SettingsSnapshot(
       seek: event.seek ?? state.settingsSnapshot.seek,
       themeMode: event.themeMode ?? state.settingsSnapshot.themeMode,
+      locale: event.locale ?? state.settingsSnapshot.locale,
     );
 
     _settingsRepository.saveSettingsSnapshot(settingsSnapshot);

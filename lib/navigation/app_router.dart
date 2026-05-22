@@ -17,6 +17,7 @@ import '../ui/screens/grammar/grammar_screen.dart';
 import '../ui/screens/home_navigation/home_navigation.dart';
 import '../ui/screens/notifications/bloc/notifications_bloc.dart';
 import '../ui/screens/onboaring/onboarding_screen.dart';
+import '../ui/screens/progress/progress_screen.dart';
 import '../ui/screens/review/flash_card_screen.dart';
 import '../ui/screens/review/review_screen.dart';
 import '../ui/screens/settings/settings_screen.dart';
@@ -50,35 +51,23 @@ class AppRouter {
         builder: (context, state, shellRoutes) {
           return MultiBlocProvider(
             providers: [
-              BlocProvider(
-                create: (context) => DI().sl<VocabularyBloc>(),
-              ),
-              BlocProvider(
-                create: (context) => DI().sl<NotificationsBloc>(),
-              ),
-              BlocProvider(
-                create: (context) => DI().sl<LessonBloc>(),
-              ),
-              BlocProvider(
-                create: (context) => DI().sl<StreakBloc>(),
-              ),
+              BlocProvider(create: (context) => DI().sl<VocabularyBloc>()),
+              BlocProvider(create: (context) => DI().sl<NotificationsBloc>()),
+              BlocProvider(create: (context) => DI().sl<LessonBloc>()),
+              BlocProvider(create: (context) => DI().sl<StreakBloc>()),
             ],
-            child: HomeNavigation(
-              child: shellRoutes,
-            ),
+            child: HomeNavigation(child: shellRoutes),
           );
         },
         branches: [
+          // Branch 0 — Vocabulary (bao gồm Review & Flashcards, không còn tab riêng)
           StatefulShellBranch(routes: [
             GoRoute(
               path: RoutePaths.vocabulary,
               pageBuilder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 final wordId = extra?['wordId'] as int?;
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: VocabularyScreen(wordId: wordId),
-                );
+                return NoTransitionPage(key: state.pageKey, child: VocabularyScreen(wordId: wordId));
               },
             ),
             GoRoute(
@@ -86,69 +75,48 @@ class AppRouter {
               pageBuilder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 final word = extra?['word'] as Word;
-                return SwipeablePage(
-                  key: state.pageKey,
-                  builder: (context) => WordDetailsScreen(word: word),
-                );
+                return SwipeablePage(key: state.pageKey, builder: (context) => WordDetailsScreen(word: word));
               },
             ),
-          ]),
-          StatefulShellBranch(routes: [
             GoRoute(
               path: RoutePaths.review,
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: ReviewScreen(),
-                );
-              },
+              pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: ReviewScreen()),
             ),
             GoRoute(
               path: RoutePaths.flashcards,
               pageBuilder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 final words = extra?['words'] as List<Word>;
-                return SwipeablePage(
-                  key: state.pageKey,
-                  builder: (context) => FlashCardScreen(
-                    words: words,
-                  ),
-                );
+                return SwipeablePage(key: state.pageKey, builder: (context) => FlashCardScreen(words: words));
               },
             ),
           ]),
+          // Branch 1 — AI Lessons (dời từ index 2 → index 1, thay thế tab Studying)
           StatefulShellBranch(routes: [
             GoRoute(
               path: RoutePaths.aiLesson,
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: const AiLessonScreen(),
-                );
-              },
+              pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const AiLessonScreen()),
             ),
           ]),
+          // Branch 2 — Progress Dashboard (tab mới ở index 2, thay thế AI cũ)
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: RoutePaths.progress,
+              pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const ProgressScreen()),
+            ),
+          ]),
+          // Branch 3 — Grammar
           StatefulShellBranch(routes: [
             GoRoute(
               path: RoutePaths.grammar,
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: GrammarScreen(),
-                );
-              },
+              pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: GrammarScreen()),
             ),
             GoRoute(
               path: RoutePaths.category,
               pageBuilder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 final category = extra?['category'] as CategoryData;
-                return SwipeablePage(
-                  key: state.pageKey,
-                  builder: (context) => CategoryScreen(
-                    category: category,
-                  ),
-                );
+                return SwipeablePage(key: state.pageKey, builder: (context) => CategoryScreen(category: category));
               },
             ),
             GoRoute(
@@ -156,45 +124,26 @@ class AppRouter {
               pageBuilder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 final lesson = extra?['lesson'] as Lesson;
-                return SwipeablePage(
-                  key: state.pageKey,
-                  builder: (context) => LessonScreen(
-                    lesson: lesson,
-                  ),
-                );
+                return SwipeablePage(key: state.pageKey, builder: (context) => LessonScreen(lesson: lesson));
               },
             ),
           ]),
+          // Branch 4 — Settings
           StatefulShellBranch(routes: [
             GoRoute(
               path: RoutePaths.settings,
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  key: state.pageKey,
-                  child: const SettingsScreen(),
-                );
-              },
-            )
+              pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const SettingsScreen()),
+            ),
           ]),
         ],
       ),
       GoRoute(
         path: RoutePaths.onboarding,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(
-            key: state.pageKey,
-            child: const OnboardingScreen(),
-          );
-        },
+        pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const OnboardingScreen()),
       ),
       GoRoute(
         path: RoutePaths.streak,
-        pageBuilder: (context, state) {
-          return SwipeablePage(
-            key: state.pageKey,
-            builder: (context) => const StreakScreen(),
-          );
-        },
+        pageBuilder: (context, state) => SwipeablePage(key: state.pageKey, builder: (context) => const StreakScreen()),
       ),
     ],
   );

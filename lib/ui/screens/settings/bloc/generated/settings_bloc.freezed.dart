@@ -19,19 +19,19 @@ mixin _$SettingsEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() getSettings,
-    required TResult Function(int? seek, int? themeMode) saveSettings,
+    required TResult Function(int? seek, int? themeMode, String? locale) saveSettings,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? getSettings,
-    TResult? Function(int? seek, int? themeMode)? saveSettings,
+    TResult? Function(int? seek, int? themeMode, String? locale)? saveSettings,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? getSettings,
-    TResult Function(int? seek, int? themeMode)? saveSettings,
+    TResult Function(int? seek, int? themeMode, String? locale)? saveSettings,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -119,7 +119,7 @@ class _$GetSettingsImpl with DiagnosticableTreeMixin implements _GetSettings {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() getSettings,
-    required TResult Function(int? seek, int? themeMode) saveSettings,
+    required TResult Function(int? seek, int? themeMode, String? locale) saveSettings,
   }) {
     return getSettings();
   }
@@ -128,7 +128,7 @@ class _$GetSettingsImpl with DiagnosticableTreeMixin implements _GetSettings {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? getSettings,
-    TResult? Function(int? seek, int? themeMode)? saveSettings,
+    TResult? Function(int? seek, int? themeMode, String? locale)? saveSettings,
   }) {
     return getSettings?.call();
   }
@@ -137,7 +137,7 @@ class _$GetSettingsImpl with DiagnosticableTreeMixin implements _GetSettings {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? getSettings,
-    TResult Function(int? seek, int? themeMode)? saveSettings,
+    TResult Function(int? seek, int? themeMode, String? locale)? saveSettings,
     required TResult orElse(),
   }) {
     if (getSettings != null) {
@@ -188,7 +188,7 @@ abstract class _$$SaveSettingsImplCopyWith<$Res> {
           _$SaveSettingsImpl value, $Res Function(_$SaveSettingsImpl) then) =
       __$$SaveSettingsImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({int? seek, int? themeMode});
+  $Res call({int? seek, int? themeMode, String? locale});
 }
 
 /// @nodoc
@@ -204,6 +204,7 @@ class __$$SaveSettingsImplCopyWithImpl<$Res>
   $Res call({
     Object? seek = freezed,
     Object? themeMode = freezed,
+    Object? locale = freezed,
   }) {
     return _then(_$SaveSettingsImpl(
       seek: freezed == seek
@@ -214,6 +215,10 @@ class __$$SaveSettingsImplCopyWithImpl<$Res>
           ? _value.themeMode
           : themeMode // ignore: cast_nullable_to_non_nullable
               as int?,
+      locale: freezed == locale
+          ? _value.locale
+          : locale // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -221,16 +226,18 @@ class __$$SaveSettingsImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$SaveSettingsImpl with DiagnosticableTreeMixin implements _SaveSettings {
-  const _$SaveSettingsImpl({this.seek, this.themeMode});
+  const _$SaveSettingsImpl({this.seek, this.themeMode, this.locale});
 
   @override
   final int? seek;
   @override
   final int? themeMode;
+  @override
+  final String? locale;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'SettingsEvent.saveSettings(seek: $seek, themeMode: $themeMode)';
+    return 'SettingsEvent.saveSettings(seek: $seek, themeMode: $themeMode, locale: $locale)';
   }
 
   @override
@@ -239,7 +246,8 @@ class _$SaveSettingsImpl with DiagnosticableTreeMixin implements _SaveSettings {
     properties
       ..add(DiagnosticsProperty('type', 'SettingsEvent.saveSettings'))
       ..add(DiagnosticsProperty('seek', seek))
-      ..add(DiagnosticsProperty('themeMode', themeMode));
+      ..add(DiagnosticsProperty('themeMode', themeMode))
+      ..add(DiagnosticsProperty('locale', locale));
   }
 
   @override
@@ -249,11 +257,12 @@ class _$SaveSettingsImpl with DiagnosticableTreeMixin implements _SaveSettings {
             other is _$SaveSettingsImpl &&
             (identical(other.seek, seek) || other.seek == seek) &&
             (identical(other.themeMode, themeMode) ||
-                other.themeMode == themeMode));
+                other.themeMode == themeMode) &&
+            (identical(other.locale, locale) || other.locale == locale));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, seek, themeMode);
+  int get hashCode => Object.hash(runtimeType, seek, themeMode, locale);
 
   @JsonKey(ignore: true)
   @override
@@ -265,29 +274,29 @@ class _$SaveSettingsImpl with DiagnosticableTreeMixin implements _SaveSettings {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() getSettings,
-    required TResult Function(int? seek, int? themeMode) saveSettings,
+    required TResult Function(int? seek, int? themeMode, String? locale) saveSettings,
   }) {
-    return saveSettings(seek, themeMode);
+    return saveSettings(seek, themeMode, locale);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? getSettings,
-    TResult? Function(int? seek, int? themeMode)? saveSettings,
+    TResult? Function(int? seek, int? themeMode, String? locale)? saveSettings,
   }) {
-    return saveSettings?.call(seek, themeMode);
+    return saveSettings?.call(seek, themeMode, locale);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? getSettings,
-    TResult Function(int? seek, int? themeMode)? saveSettings,
+    TResult Function(int? seek, int? themeMode, String? locale)? saveSettings,
     required TResult orElse(),
   }) {
     if (saveSettings != null) {
-      return saveSettings(seek, themeMode);
+      return saveSettings(seek, themeMode, locale);
     }
     return orElse();
   }
@@ -325,11 +334,14 @@ class _$SaveSettingsImpl with DiagnosticableTreeMixin implements _SaveSettings {
 }
 
 abstract class _SaveSettings implements SettingsEvent {
-  const factory _SaveSettings({final int? seek, final int? themeMode}) =
-      _$SaveSettingsImpl;
+  const factory _SaveSettings(
+      {final int? seek,
+      final int? themeMode,
+      final String? locale}) = _$SaveSettingsImpl;
 
   int? get seek;
   int? get themeMode;
+  String? get locale;
   @JsonKey(ignore: true)
   _$$SaveSettingsImplCopyWith<_$SaveSettingsImpl> get copyWith =>
       throw _privateConstructorUsedError;

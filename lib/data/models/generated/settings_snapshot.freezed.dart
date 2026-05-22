@@ -24,6 +24,8 @@ mixin _$SettingsSnapshot {
   int get seek => throw _privateConstructorUsedError;
   @HiveField(1)
   int get themeMode => throw _privateConstructorUsedError;
+  @HiveField(2)
+  String get locale => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -37,7 +39,7 @@ abstract class $SettingsSnapshotCopyWith<$Res> {
           SettingsSnapshot value, $Res Function(SettingsSnapshot) then) =
       _$SettingsSnapshotCopyWithImpl<$Res, SettingsSnapshot>;
   @useResult
-  $Res call({@HiveField(0) int seek, @HiveField(1) int themeMode});
+  $Res call({@HiveField(0) int seek, @HiveField(1) int themeMode, @HiveField(2) String locale});
 }
 
 /// @nodoc
@@ -55,6 +57,7 @@ class _$SettingsSnapshotCopyWithImpl<$Res, $Val extends SettingsSnapshot>
   $Res call({
     Object? seek = null,
     Object? themeMode = null,
+    Object? locale = null,
   }) {
     return _then(_value.copyWith(
       seek: null == seek
@@ -65,6 +68,10 @@ class _$SettingsSnapshotCopyWithImpl<$Res, $Val extends SettingsSnapshot>
           ? _value.themeMode
           : themeMode // ignore: cast_nullable_to_non_nullable
               as int,
+      locale: null == locale
+          ? _value.locale
+          : locale // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -77,7 +84,7 @@ abstract class _$$SettingsSnapshotImplCopyWith<$Res>
       __$$SettingsSnapshotImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({@HiveField(0) int seek, @HiveField(1) int themeMode});
+  $Res call({@HiveField(0) int seek, @HiveField(1) int themeMode, @HiveField(2) String locale});
 }
 
 /// @nodoc
@@ -93,6 +100,7 @@ class __$$SettingsSnapshotImplCopyWithImpl<$Res>
   $Res call({
     Object? seek = null,
     Object? themeMode = null,
+    Object? locale = null,
   }) {
     return _then(_$SettingsSnapshotImpl(
       seek: null == seek
@@ -103,6 +111,10 @@ class __$$SettingsSnapshotImplCopyWithImpl<$Res>
           ? _value.themeMode
           : themeMode // ignore: cast_nullable_to_non_nullable
               as int,
+      locale: null == locale
+          ? _value.locale
+          : locale // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -111,7 +123,9 @@ class __$$SettingsSnapshotImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SettingsSnapshotImpl implements _SettingsSnapshot {
   const _$SettingsSnapshotImpl(
-      {@HiveField(0) this.seek = 0X2196F3, @HiveField(1) this.themeMode = 0});
+      {@HiveField(0) this.seek = 0X2196F3,
+      @HiveField(1) this.themeMode = 0,
+      @HiveField(2) this.locale = 'en'});
 
   factory _$SettingsSnapshotImpl.fromJson(Map<String, dynamic> json) =>
       _$$SettingsSnapshotImplFromJson(json);
@@ -124,10 +138,14 @@ class _$SettingsSnapshotImpl implements _SettingsSnapshot {
   @JsonKey()
   @HiveField(1)
   final int themeMode;
+  @override
+  @JsonKey()
+  @HiveField(2)
+  final String locale;
 
   @override
   String toString() {
-    return 'SettingsSnapshot(seek: $seek, themeMode: $themeMode)';
+    return 'SettingsSnapshot(seek: $seek, themeMode: $themeMode, locale: $locale)';
   }
 
   @override
@@ -137,12 +155,13 @@ class _$SettingsSnapshotImpl implements _SettingsSnapshot {
             other is _$SettingsSnapshotImpl &&
             (identical(other.seek, seek) || other.seek == seek) &&
             (identical(other.themeMode, themeMode) ||
-                other.themeMode == themeMode));
+                other.themeMode == themeMode) &&
+            (identical(other.locale, locale) || other.locale == locale));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, seek, themeMode);
+  int get hashCode => Object.hash(runtimeType, seek, themeMode, locale);
 
   @JsonKey(ignore: true)
   @override
@@ -162,7 +181,8 @@ class _$SettingsSnapshotImpl implements _SettingsSnapshot {
 abstract class _SettingsSnapshot implements SettingsSnapshot {
   const factory _SettingsSnapshot(
       {@HiveField(0) final int seek,
-      @HiveField(1) final int themeMode}) = _$SettingsSnapshotImpl;
+      @HiveField(1) final int themeMode,
+      @HiveField(2) final String locale}) = _$SettingsSnapshotImpl;
 
   factory _SettingsSnapshot.fromJson(Map<String, dynamic> json) =
       _$SettingsSnapshotImpl.fromJson;
@@ -173,6 +193,9 @@ abstract class _SettingsSnapshot implements SettingsSnapshot {
   @override
   @HiveField(1)
   int get themeMode;
+  @override
+  @HiveField(2)
+  String get locale;
   @override
   @JsonKey(ignore: true)
   _$$SettingsSnapshotImplCopyWith<_$SettingsSnapshotImpl> get copyWith =>

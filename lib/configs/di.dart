@@ -19,6 +19,7 @@ import '../data/repositories/settings_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/ai_repository.dart';
 import '../data/repositories/streak_repository.dart';
+import '../data/repositories/progress_repository.dart';
 import '../ui/blocs/auth/auth_cubit.dart';
 import '../ui/blocs/iap/iap_bloc.dart';
 import '../ui/blocs/translate/translate_cubit.dart';
@@ -49,6 +50,7 @@ class DI {
     sl.registerLazySingleton<VocabularyBloc>(
       () => VocabularyBloc(
         oxfordWordsRepository: sl(),
+        progressRepository: sl(),
       ),
     );
 
@@ -74,12 +76,14 @@ class DI {
     sl.registerFactory(
       () => LessonBloc(
         lessonRepository: sl(),
+        progressRepository: sl(),
       ),
     );
 
     sl.registerFactory(
       () => StreakBloc(
         streakRepository: sl(),
+        progressRepository: sl(),
       ),
     );
 
@@ -115,6 +119,12 @@ class DI {
     sl.registerLazySingleton<LessonRepository>(
       () => LessonRepositoryImpl(
         pairStorage: sl(),
+      ),
+    );
+
+    sl.registerLazySingleton<ProgressRepository>(
+      () => ProgressRepositoryImpl(
+        dio: sl(instanceName: 'BackendDio'),
       ),
     );
 

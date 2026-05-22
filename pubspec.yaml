@@ -116,3 +116,11 @@ flutter:
     - assets/md/grammar/tenses/present/
     - assets/md/grammar/sentences/
     - assets/md/speaking/
+    - assets/md/grammar_vi/
+    - assets/md/grammar_vi/tenses/
+    - assets/md/grammar_vi/tenses/past/
+    - assets/md/grammar_vi/tenses/future/
+    - assets/md/grammar_vi/tenses/present/
+    - assets/md/grammar_vi/sentences/
+    - assets/md/grammar_vi/words/
+    - assets/md/grammar_vi/words/word__families/

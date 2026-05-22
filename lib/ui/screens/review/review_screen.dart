@@ -19,6 +19,7 @@ import '../vocabulary/bloc/vocabulary_bloc.dart';
 import '../vocabulary/widgets/vocabulary_item.dart';
 import 'widgets/empty_review_page.dart';
 import 'widgets/schedule_modal.dart';
+import '../../../utils/l10n.dart';
 
 class ReviewScreen extends StatefulWidget {
   const ReviewScreen({super.key});
@@ -38,13 +39,13 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
     final colorScheme = Theme.of(context).colorScheme;
     final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
     return BasePage(
-      title: 'Review',
+      title: L10n.tr(context, 'review'),
       actions: [
         if (vocabularyState.words.any((word) => word.status == WordStatus.unknown))
           TextButton(
             onPressed: () => _showScheduleModal(context, reviewWords),
             child: Text(
-              'Schedule',
+              L10n.tr(context, 'schedule'),
               style: textTheme.titleSmall?.copyWith(
                 color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -96,7 +97,7 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
                         const SizedBox(width: 8),
                       ],
                       Text(
-                        'Start Flashcards',
+                        L10n.tr(context, 'start_flashcards'),
                         style: textTheme.titleSmall?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
                       ),
                     ],

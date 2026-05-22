@@ -15,6 +15,8 @@ import '../../commons/purchase_success_dialog.dart';
 import '../notifications/bloc/notifications_bloc.dart';
 import '../streak/bloc/streak_bloc.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
+import '../settings/bloc/settings_bloc.dart';
+import '../../../utils/l10n.dart';
 import 'widget/streak_button.dart';
 
 class HomeNavigation extends StatefulWidget {
@@ -22,28 +24,29 @@ class HomeNavigation extends StatefulWidget {
 
   const HomeNavigation({super.key, required this.child});
 
+  /// Thứ tự tabs: Vocabulary(0) → AI(1) → Progress(2) → Grammar(3) → Settings(4)
   static const routes = [
     RoutePaths.vocabulary,
-    RoutePaths.review,
     RoutePaths.aiLesson,
+    RoutePaths.progress,
     RoutePaths.grammar,
     RoutePaths.settings,
   ];
 
   static const icons = [
     Assets.svgVocabulary,
-    Assets.svgStar,
-    Assets.svgBook,
+    Assets.svgBook,    // AI Lessons
+    Assets.svgStreak,  // Progress (dùng streak icon có sẵn)
     Assets.svgGrammar,
     Assets.svgSettings,
   ];
 
-  static const labels = [
-    "Vocabulary",
-    "Studying",
-    "AI",
-    "Grammar",
-    "Settings",
+  static const translationKeys = [
+    "vocabulary",
+    "ai_lesson",
+    "progress",
+    "grammar",
+    "settings",
   ];
 
   @override
@@ -56,16 +59,20 @@ class _HomeNavigationState extends State<HomeNavigation> {
   @override
   Widget build(BuildContext context) {
     final iapState = context.watch<IapBloc>().state;
-
+    // Watch settings bloc to rebuild bottom bar on locale change
+    final locale = context.watch<SettingsBloc>().state.settingsSnapshot.locale;
     final isLoading = iapState.isLoading;
-
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Dùng currentIndex của shell để xác định tab đang active,
+    // tránh lỗi khi đang ở sub-route (flashcards, word_details...)
     final currentRoute = GoRouter.of(context).currentRoute;
     var selectedIndex = HomeNavigation.routes.indexOf(currentRoute);
-    if (selectedIndex == -1 && currentRoute == RoutePaths.flashcards) {
-      selectedIndex = 2;
+    if (selectedIndex == -1) {
+      // Sub-route (flashcards, word_details, review, category, lesson...): dùng currentIndex của shell
+      selectedIndex = widget.child.currentIndex;
     }
+
     final selectedColor = colorScheme.primary;
     final unselectedColor = Colors.grey[600]!;
 
@@ -87,12 +94,14 @@ class _HomeNavigationState extends State<HomeNavigation> {
             _handleError(context, state.failure);
           },
         ),
+        // [BUG FIX] Thống nhất premium check: dùng != null thay vì == -1
+        // để cả temporary (consumable) và permanent premium đều hiện dialog
         BlocListener<IapBloc, IapState>(
           listenWhen: (previous, current) {
             return previous.boughtNoAdsTime != current.boughtNoAdsTime;
           },
           listener: (context, state) {
-            if (state.boughtNoAdsTime == -1) {
+            if (state.boughtNoAdsTime != null) {
               showDialog(context: context, builder: (_) => PurchaseSuccessDialog());
             }
           },
@@ -102,7 +111,8 @@ class _HomeNavigationState extends State<HomeNavigation> {
             return previous.products != current.products;
           },
           listener: (context, state) {
-            final isPremium = state.boughtNoAdsTime == -1;
+            // [BUG FIX] Dùng != null để check premium nhất quán với các screen khác
+            final isPremium = state.boughtNoAdsTime != null;
             if (!isPremium) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 showDialog(context: context, builder: (_) => PaywallDialog());
@@ -112,11 +122,12 @@ class _HomeNavigationState extends State<HomeNavigation> {
         ),
       ],
       child: Scaffold(
-        floatingActionButton: [0].contains(widget.child.currentIndex) &&
-                HomeNavigation.routes.contains(widget.child.shellRouteContext.routerState.uri.path)
+        // StreakButton chỉ hiện ở Tab 0 (Vocabulary branch)
+        // [BUG FIX] Dùng context.push thay vì goBranch vì /streak là top-level route (ngoài StatefulShell)
+        floatingActionButton: widget.child.currentIndex == 0
             ? StreakButton(
                 onPressed: () {
-                  widget.child.goBranch(HomeNavigation.routes.indexOf(RoutePaths.streak));
+                  context.push(RoutePaths.streak);
                 },
               )
             : null,
@@ -142,7 +153,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
           data: Theme.of(context).copyWith(
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
-          ), //
+          ),
           child: BottomNavigationBar(
             showUnselectedLabels: true,
             currentIndex: selectedIndex == -1 ? 0 : selectedIndex,
@@ -153,7 +164,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
             unselectedItemColor: unselectedColor,
             onTap: _onSelect,
             items: List.generate(
-              HomeNavigation.labels.length,
+              HomeNavigation.translationKeys.length,
               (index) => BottomNavigationBarItem(
                 icon: Container(
                   decoration: BoxDecoration(
@@ -170,7 +181,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
                     height: 24,
                   ),
                 ),
-                label: HomeNavigation.labels[index],
+                label: L10n.tr(context, HomeNavigation.translationKeys[index]),
               ),
             ),
           ),
@@ -190,7 +201,6 @@ class _HomeNavigationState extends State<HomeNavigation> {
     _appLifecycleListener = AppLifecycleListener(
       onShow: () {
         debugPrint('NotificationsScreen: onShow');
-        // this is needed to update the permissions status when the user returns to the app after changing the notification settings
         notificationsBloc.add(const NotificationsEvent.requestPermissions());
       },
     );
@@ -206,7 +216,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
     widget.child.goBranch(value);
   }
 
-  _handleError(BuildContext context, Failure? failure) {
+  void _handleError(BuildContext context, Failure? failure) {
     if (failure != null) {
       AppSnackBar.showError(context, failure.message);
     }

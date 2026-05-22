@@ -7,5 +7,7 @@ class SettingsEvent with _$SettingsEvent {
   const factory SettingsEvent.saveSettings({
     int? seek,
     int? themeMode,
+    String? locale,
   }) = _SaveSettings;
 }
+

@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../data/repositories/streak_repository.dart';
+import '../../../../data/repositories/progress_repository.dart';
 
 part 'streak_event.dart';
 
@@ -14,13 +15,16 @@ part 'generated/streak_bloc.freezed.dart';
 
 class StreakBloc extends Bloc<StreakEvent, StreakState> {
   final StreakRepository _streakRepository;
+  final ProgressRepository _progressRepository;
   static const int timePerDayNeeded = 60 * 5; // 5 minutes
 
   Timer? _streakTimer;
 
   StreakBloc({
     required StreakRepository streakRepository,
+    required ProgressRepository progressRepository,
   })  : _streakRepository = streakRepository,
+        _progressRepository = progressRepository,
         super(const StreakState()) {
     on<StreakEvent>((event, emit) async {
       await event.map(
@@ -65,6 +69,13 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
           longestStreak: newLongestStreak,
         )));
         _streakRepository.setStreak(newStreak);
+        
+        // Log to backend
+        _progressRepository.logSession(
+          timeSpentSeconds: timePerDayNeeded,
+          wordsLearned: 0,
+          lessonsCompleted: 0,
+        );
       }
     });
   }
