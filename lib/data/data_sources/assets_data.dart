@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/word.dart';
@@ -10,12 +11,16 @@ abstract interface class AssetsData {
 }
 
 class AssetsDataImpl implements AssetsData {
+  static List<Word> _parseWords(String jsonString) {
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((json) => Word.fromJson(json)).toList();
+  }
+
   @override
   Future<List<Word>> getOxfordWordsByLetter(String letter) async {
     final path = 'assets/json/oxford_words/$letter.json';
     final jsonString = await rootBundle.loadString(path);
-    final List<dynamic> jsonList = json.decode(jsonString);
-    return jsonList.map((json) => Word.fromJson(json)).toList();
+    return compute(_parseWords, jsonString);
   }
 
   @override

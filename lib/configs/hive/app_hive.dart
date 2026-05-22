@@ -28,8 +28,25 @@ class AppHive {
     Hive.registerAdapter(SettingsSnapshotAdapter());
     Hive.registerAdapter(ScheduledNotificationAdapter());
 
-    await Hive.openBox<Word>(wordKey);
-    await Hive.openBox<SettingsSnapshot>(settingsSnapshotKey);
-    await Hive.openBox<ScheduledNotification>(scheduledNotificationKey);
+    try {
+      await Hive.openBox<Word>(wordKey);
+    } catch (e) {
+      await Hive.deleteBoxFromDisk(wordKey);
+      await Hive.openBox<Word>(wordKey);
+    }
+    
+    try {
+      await Hive.openBox<SettingsSnapshot>(settingsSnapshotKey);
+    } catch (e) {
+      await Hive.deleteBoxFromDisk(settingsSnapshotKey);
+      await Hive.openBox<SettingsSnapshot>(settingsSnapshotKey);
+    }
+    
+    try {
+      await Hive.openBox<ScheduledNotification>(scheduledNotificationKey);
+    } catch (e) {
+      await Hive.deleteBoxFromDisk(scheduledNotificationKey);
+      await Hive.openBox<ScheduledNotification>(scheduledNotificationKey);
+    }
   }
 }
