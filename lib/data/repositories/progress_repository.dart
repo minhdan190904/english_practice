@@ -24,7 +24,7 @@ class ProgressRepositoryImpl implements ProgressRepository {
   }) async {
     try {
       await _dio.post(
-        '/api/v1/progress/log-session',
+        '/progress/log-session',
         data: {
           'timeSpentSeconds': timeSpentSeconds,
           'wordsLearned': wordsLearned,

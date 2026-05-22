@@ -48,7 +48,7 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     debugPrint('VocabularyBloc: changeStatus - word ${event.word.status} - status ${event.status}');
     final newWord = event.word.copyWith(status: event.status);
     final words = state.words.map((word) {
-      if (word == event.word) {
+      if (word.word == event.word.word) {
         return newWord;
       }
       return word;
@@ -81,7 +81,7 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
       userDefinition: event.newDefinition,
     );
     final words = state.words.map((word) {
-      if (word == event.word) {
+      if (word.word == event.word.word) {
         return newWord;
       }
       return word;

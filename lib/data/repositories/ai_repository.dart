@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/lesson_result.dart';
 import '../models/sample_passage_response.dart';
+import '../models/word.dart';
 
 class AiRepository {
   final Dio _dio;
@@ -58,6 +59,25 @@ class AiRepository {
       return SamplePassageResponse.fromJson(data);
     } catch (e) {
       throw Exception('Failed to generate sample passage: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    try {
+      final response = await _dio.get('/categories');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to get categories: $e');
+    }
+  }
+
+  Future<List<Word>> getCategoryWords(String categoryId) async {
+    try {
+      final response = await _dio.get('/categories/$categoryId/words');
+      var data = response.data as List;
+      return data.map((json) => Word.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to get category words: $e');
     }
   }
 }

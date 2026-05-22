@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
+import '../../../data/repositories/ai_repository.dart';
 import '../../commons/base_page.dart';
 import '../../commons/rounded_button.dart';
+import 'category_words_screen.dart';
 import 'new_ai_lesson_screen.dart';
 import '../../../utils/l10n.dart';
 
-/// AI Lessons screen — dùng BasePage và RoundedButton như các màn hình khác.
-/// Giữ nguyên UI style. Placeholder cho recent lessons list (sẽ implement đầy đủ ở Phase 4).
-class AiLessonScreen extends StatelessWidget {
+class AiLessonScreen extends StatefulWidget {
   const AiLessonScreen({super.key});
+
+  @override
+  State<AiLessonScreen> createState() => _AiLessonScreenState();
+}
+
+class _AiLessonScreenState extends State<AiLessonScreen> {
+  late Future<List<Map<String, dynamic>>> _categoriesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoriesFuture = GetIt.instance<AiRepository>().getCategories();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,44 +34,75 @@ class AiLessonScreen extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.menu_book_rounded,
-                      size: 56,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    L10n.tr(context, 'no_ai_lessons'),
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    L10n.tr(context, 'create_lesson_desc'),
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.55),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _categoriesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Failed to load categories', style: TextStyle(color: colorScheme.error)),
+                  );
+                }
+                final categories = snapshot.data ?? [];
+                if (categories.isEmpty) {
+                  return Center(
+                    child: Text(L10n.tr(context, 'no_ai_lessons')),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final item = categories[index];
+                    final String categoryName = item['category'] ?? '';
+                    final int count = item['count'] ?? 0;
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12.0),
+                      elevation: 0,
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.category_rounded, color: colorScheme.primary),
+                        ),
+                        title: Text(
+                          categoryName.toUpperCase(),
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        subtitle: Text('$count words', style: textTheme.bodySmall),
+                        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CategoryWordsScreen(
+                                categoryId: categoryName,
+                                categoryTitle: categoryName.toUpperCase(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 16, top: 8),
             child: RoundedButton(
               borderRadius: 16,
               onPressed: () {
