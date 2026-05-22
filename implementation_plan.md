@@ -14,7 +14,7 @@ Kế hoạch nâng cấp app **English Practice** từ một app học từ vự
 | **Client** | Flutter + BLoC + Freezed + GoRouter |
 | **Grammar** | 37 markdown files bundled trong `assets/md/grammar/` (LOCAL, không qua API) |
 | **Vocabulary** | Oxford JSON files (~14MB trên server) + category JSON files (~12MB) |
-| **IAP** | Client-side `in_app_purchase` package (không verify server) |
+| **IAP** | `in_app_purchase` package + Backend Verification (kiểm tra orderId chống hack) |
 | **Ads** | `google_mobile_ads`: BannerAd + RewardedAd (đã implement) |
 
 ```mermaid
@@ -57,8 +57,6 @@ gantt
 >
 > Bạn có đồng ý cách sắp xếp này không, hay muốn giữ nguyên cấu trúc cũ?
 
-> [!WARNING]
-> **IAP Backend Verification**: Hiện tại IAP chỉ xử lý client-side (không verify receipt trên server). Đề xuất thêm backend verification qua Spring Boot endpoint. Điều này yêu cầu thay đổi flow mua hàng hiện tại. Bạn có muốn thêm backend verification hay giữ client-side?
 
 > [!IMPORTANT]
 > **Grammar dịch sang tiếng Việt**: Grammar lessons hiện là 37 file `.md` nằm trong `assets/md/grammar/`. Để hỗ trợ song ngữ, có 2 cách:
@@ -158,7 +156,7 @@ Mục tiêu: Song ngữ Việt-Anh cho toàn bộ UI + grammar content.
 
 ### 2.1 Localization Infrastructure
 
-#### [NEW] `lib/l10n/app_en.arb` 
+#### [NEW] `lib/l10n/app_en.arb`
 - Extract tất cả ~150-200 hardcoded English strings từ UI
 
 #### [NEW] `lib/l10n/app_vi.arb`
@@ -303,7 +301,7 @@ Mục tiêu: User thấy rõ progress, tạo động lực học tiếp.
   - Tháng hiện tại
 
 #### [NEW] `lib/ui/screens/progress/bloc/progress_bloc.dart`
-#### [NEW] `lib/ui/screens/progress/bloc/progress_event.dart`  
+#### [NEW] `lib/ui/screens/progress/bloc/progress_event.dart`
 #### [NEW] `lib/ui/screens/progress/bloc/progress_state.dart`
 - State: `VocabStats`, `GrammarStats`, `WeeklyActivity[]`, `StreakCalendar`
 - Events: `loadProgress`, `refreshProgress`
@@ -456,6 +454,7 @@ public class Purchase {
 | GET | `/api/v1/purchases/status` | Check subscription status |
 
 #### [NEW] Backend: `src/service/PurchaseService.java` + `impl/PurchaseServiceImpl.java`
+- Chống hack (Lucky Patcher/fake tools): Bắt buộc kiểm tra tính hợp lệ của `orderId`, purchase token. Nếu phát hiện biên lai giả → reject ngay lập tức (cho cút luôn).
 - Verify receipt với Google Play Developer API
 - Verify receipt với App Store Server API
 - Lưu purchase record
@@ -469,7 +468,7 @@ public class Purchase {
 
 #### [MODIFY] [iap_bloc.dart](file:///C:/english_practice/english_practice_client/lib/ui/blocs/iap/iap_bloc.dart)
 - Sau purchase thành công → gọi `POST /api/v1/purchases/verify`
-- Fallback: nếu verify fail, vẫn hoạt động client-side
+- Tuyệt đối không fallback: Nếu backend trả về verify fail hoặc phát hiện orderId giả mạo, hủy bỏ nâng cấp Premium ngay lập tức, hiển thị lỗi giao dịch.
 
 #### [MODIFY] [paywall_dialog.dart](file:///C:/english_practice/english_practice_client/lib/ui/commons/dialogs/paywall_dialog.dart)
 - Redesign UI:
