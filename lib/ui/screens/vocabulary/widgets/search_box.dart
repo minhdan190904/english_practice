@@ -1,3 +1,4 @@
+import '../../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -63,7 +64,7 @@ class _SearchBoxState extends State<SearchBox> {
               height: 40,
               child: Row(
                 children: [
-                  Text("Word Pos: "),
+                  Text(L10n.tr(context, 'word_pos')),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ListView.builder(
@@ -98,7 +99,7 @@ class _SearchBoxState extends State<SearchBox> {
               height: 40,
               child: Row(
                 children: [
-                  Text("Letter: "),
+                  Text(L10n.tr(context, 'letter')),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ListView.builder(
@@ -136,7 +137,7 @@ class _SearchBoxState extends State<SearchBox> {
               height: 40,
               child: Row(
                 children: [
-                  Text("Status : "),
+                  Text(L10n.tr(context, 'status')),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ListView.builder(

@@ -1,3 +1,4 @@
+import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -17,18 +18,18 @@ class PaywallPage extends StatelessWidget {
         SizedBox(height: spacing),
         ListTile(
           leading: SvgPicture.asset(Assets.svgTimerPlay, color: colorScheme.primary, width: 24, height: 24),
-          title: Text("No Ads", style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
-          subtitle: Text("Enjoy our app without any ads"),
+          title: Text(L10n.tr(context, 'no_ads'), style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
+          subtitle: Text(L10n.tr(context, 'enjoy_no_ads')),
         ),
         ListTile(
           leading: Icon(Icons.group, color: colorScheme.primary),
-          title: Text("Support anywhere", style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
-          subtitle: Text("Get support from our team"),
+          title: Text(L10n.tr(context, 'support_anywhere'), style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
+          subtitle: Text(L10n.tr(context, 'get_support')),
         ),
         ListTile(
           leading: Icon(Icons.check, color: colorScheme.primary),
-          title: Text("Best performance", style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
-          subtitle: Text("Our server will prioritize your requests"),
+          title: Text(L10n.tr(context, 'best_performance'), style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurface)),
+          subtitle: Text(L10n.tr(context, 'server_prioritize')),
         ),
       ],
     );

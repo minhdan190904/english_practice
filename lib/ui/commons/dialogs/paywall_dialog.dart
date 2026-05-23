@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:amplitude_flutter/amplitude.dart';
 import 'package:amplitude_flutter/events/base_event.dart';
 import 'package:flutter/material.dart';
@@ -98,9 +99,9 @@ class _PaywallDialogState extends State<PaywallDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      TextButton(onPressed: _openTermsOfUse, child: Text("Terms")),
-                      TextButton(onPressed: () => _onRestorePurchase(context), child: Text("Restore")),
-                      TextButton(onPressed: _openPrivacyPolicy, child: Text("Policy")),
+                      TextButton(onPressed: _openTermsOfUse, child: Text(L10n.tr(context, 'terms'))),
+                      TextButton(onPressed: () => _onRestorePurchase(context), child: Text(L10n.tr(context, 'restore'))),
+                      TextButton(onPressed: _openPrivacyPolicy, child: Text(L10n.tr(context, 'policy'))),
                     ],
                   ),
                 ],

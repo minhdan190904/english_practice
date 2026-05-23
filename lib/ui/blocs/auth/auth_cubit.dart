@@ -15,6 +15,20 @@ class AuthCubit extends Cubit<AuthState> {
     });
   }
 
+  /// Link anonymous account with Google
+  Future<LinkResult> linkWithGoogle() async {
+    try {
+      emit(state.copyWith(isLoading: true, errorMessage: null));
+      final result = await _authRepository.linkWithGoogle();
+      emit(state.copyWith(isLoading: false));
+      return result;
+    } catch (e) {
+      emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
+      return LinkResult.error;
+    }
+  }
+
+  /// Sign in directly with Google (used when user chooses to load existing data)
   Future<void> signInWithGoogle() async {
     try {
       emit(state.copyWith(isLoading: true, errorMessage: null));
@@ -22,6 +36,19 @@ class AuthCubit extends Cubit<AuthState> {
       emit(state.copyWith(isLoading: false));
     } catch (e) {
       emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
+    }
+  }
+
+  /// Use a different Google account to link
+  Future<LinkResult> linkWithDifferentGoogle() async {
+    try {
+      emit(state.copyWith(isLoading: true, errorMessage: null));
+      final result = await _authRepository.linkWithDifferentGoogle();
+      emit(state.copyWith(isLoading: false));
+      return result;
+    } catch (e) {
+      emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
+      return LinkResult.error;
     }
   }
 

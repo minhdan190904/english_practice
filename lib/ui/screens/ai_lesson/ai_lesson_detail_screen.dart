@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../configs/di.dart';
@@ -158,7 +159,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                     children: [
                       Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[500]),
                       const SizedBox(width: 4),
-                      Text('Created: Today',
+                      Text(L10n.tr(context, 'created_today'),
                         style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500])),
                       const SizedBox(width: 16),
                       Icon(Icons.text_fields_rounded, size: 14, color: Colors.grey[500]),
@@ -169,7 +170,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       OutlinedButton.icon(
                         onPressed: () {},
                         icon: const Icon(Icons.flag_outlined, size: 14),
-                        label: const Text('Report'),
+                        label: Text(L10n.tr(context, 'report')),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           textStyle: const TextStyle(fontSize: 12),
@@ -204,7 +205,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                           const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () => setState(() => _showFull = true),
-                            child: Text('Show more',
+                            child: Text(L10n.tr(context, 'show_more'),
                               style: TextStyle(
                                 color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w600,
@@ -251,11 +252,11 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.style, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text('Practice Now',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      children: [
+                        const Icon(Icons.style, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(L10n.tr(context, 'practice_now'),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   ),
@@ -265,7 +266,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             const SizedBox(height: 24),
 
             // Vocabulary list
-            Text('Vocabulary List',
+            Text(L10n.tr(context, 'vocabulary_list'),
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
@@ -298,10 +299,10 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (word.definition != null)
-                          Text('Meaning: ${word.definition}',
+                          Text('${L10n.tr(context, 'meaning_prefix')}${word.definition}',
                             style: TextStyle(color: Colors.grey[700], fontSize: 13)),
                         if (word.phoneticText != null)
-                          Text('Pronunciation: ${word.phoneticText}',
+                          Text('${L10n.tr(context, 'pronunciation_prefix')}${word.phoneticText}',
                             style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 12)),
                         if (word.example != null)
                           Text(word.example!,

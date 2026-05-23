@@ -1,3 +1,4 @@
+import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,13 +67,13 @@ class AppHeader extends StatelessWidget {
         onPressed: () {
           _onRemoveAds(context);
         },
-        child: Row(children: [const Icon(Icons.star), const SizedBox(width: 8), Text('Remove Ads')]),
+        child: Row(children: [const Icon(Icons.star), const SizedBox(width: 8), Text(L10n.tr(context, 'remove_ads'))]),
       );
     }
     if (time == -1) {
       return TextButton(
         onPressed: () {},
-        child: Row(children: [const Icon(Icons.star), const SizedBox(width: 8), Text('Premium')]),
+        child: Row(children: [const Icon(Icons.star), const SizedBox(width: 8), Text(L10n.tr(context, 'premium'))]),
       );
     }
     final day = DateTime.fromMillisecondsSinceEpoch(time).difference(DateTime.now()).inDays + 1;

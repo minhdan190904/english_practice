@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 
@@ -40,7 +41,7 @@ class RequestNotificationsPermissionDialog extends StatelessWidget {
                 Navigator.of(context).pop();
                 AppSettings.openAppSettings(type: AppSettingsType.notification);
               },
-              child: Text("Open settings"),
+              child: Text(L10n.tr(context, 'open_settings_btn')),
             ),
             const SizedBox(height: 8),
             RoundedButton(
@@ -48,7 +49,7 @@ class RequestNotificationsPermissionDialog extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text("Not now"),
+              child: Text(L10n.tr(context, 'not_now')),
             ),
           ],
         ),

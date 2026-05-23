@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 
 class SelectLevelScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Your Level', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(L10n.tr(context, 'select_your_level'), style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Column(
@@ -41,10 +42,10 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Select Your English Level',
+                Text(L10n.tr(context, 'select_your_english_level'),
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text('Choose the level that best describes your English proficiency.',
+                Text(L10n.tr(context, 'choose_level_desc'),
                   style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
               ],
             ),
@@ -125,7 +126,7 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Confirm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(L10n.tr(context, 'confirm'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ),

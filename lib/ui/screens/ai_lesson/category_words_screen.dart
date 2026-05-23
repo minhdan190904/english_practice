@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -67,10 +68,10 @@ class _CategoryWordsScreenState extends State<CategoryWordsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return const Center(child: Text('Failed to load words'));
+            return Center(child: Text(L10n.tr(context, 'failed_to_load_words')));
           }
           if (_words.isEmpty) {
-            return const Center(child: Text('No words found in this category.'));
+            return Center(child: Text(L10n.tr(context, 'no_words_in_category')));
           }
 
           return ListView.builder(

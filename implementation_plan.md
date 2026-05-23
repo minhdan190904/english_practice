@@ -417,16 +417,75 @@ Mục tiêu: Tận dụng 18 AI categories + category JSON files (đã có sẵn
 
 ---
 
-## Phase 5: IAP & Ads Backend — Hoàn thiện mua hàng & quảng cáo
+## Phase 5: Auth, User Sync, IAP & Ads Backend — Hoàn thiện Đăng nhập, Đồng bộ, Mua hàng & Quảng cáo
 
-Mục tiêu: Build IAP backend từ đầu (hiện tại **ZERO implementation** trên backend) và tối ưu hóa ads.
+Mục tiêu: Triển khai đăng nhập ẩn danh kết hợp đồng bộ Google, build IAP backend từ đầu (hiện tại ZERO implementation trên backend) và tối ưu hóa ads.
 
 > [!CAUTION]
 > **IAP backend = 0 dòng code.** Cần build hoàn toàn mới: Entity `Purchase`, Repository, Controller, Service, tích hợp Google Play Developer API. Đây là phase tốn effort nhất.
 
 ---
 
-### 5.1 Backend: Purchase Verification
+### 5.1 Authentication & User Sync (Đăng nhập ẩn danh + Đồng bộ Google)
+
+**Luồng hoạt động chính:**
+
+```
+[Mở App lần đầu]
+    │
+    ▼
+[currentUser == null?] ──YES──► signInAnonymously() → UID tạm
+    │                                                    │
+    NO (đã có user)                                      │
+    │                                                    │
+    ▼                                                    ▼
+[Tiếp tục dùng app bình thường với UID hiện tại]
+    │
+    ▼
+[User bấm "Đồng bộ Google" trong Settings]
+    │
+    ▼
+[Lấy Google Credential]
+    │
+    ▼
+[linkWithCredential(credential)]
+    │
+    ├──── Thành công ──► UID giữ nguyên, email/name cập nhật ✅
+    │
+    └──── Lỗi: credential-already-in-use ──► Hiển thị Dialog xung đột ⚠️
+```
+
+**Dialog xung đột tài khoản (khi Gmail đã liên kết với UID khác):**
+
+> **Tiêu đề:** Phát hiện dữ liệu học tập! 💾
+>
+> **Nội dung:** "Tài khoản Google `user@gmail.com` đã có dữ liệu học tập từ trước."
+>
+> | Nút | Hành động |
+> |-----|-----------|
+> | **[ Tải dữ liệu cũ ]** | Sign out ẩn danh hiện tại → `signInWithCredential(credential)` → Đăng nhập vào UID cũ (có data từ máy A) |
+> | **[ Dùng Gmail khác ]** | Hủy → Mở lại bảng chọn tài khoản Google để chọn Gmail khác chưa có data |
+> | **[ Quay lại ]** | Đóng dialog, giữ nguyên trạng thái ẩn danh hiện tại |
+
+#### [MODIFY] Client: `main.dart`
+- Thêm `runStep('Auth', ...)` gọi `FirebaseAuth.instance.signInAnonymously()` nếu `currentUser == null`.
+- Đảm bảo mọi request API sau đó đều tự động gắn Firebase ID Token (đã có sẵn trong `ApiClient` interceptor).
+
+#### [MODIFY] Client: `settings_screen.dart`
+- Nếu `user.isAnonymous == true`: Hiển thị nút **"Đồng bộ dữ liệu với Google"**.
+- Nếu `user.isAnonymous == false` (đã liên kết Google): Hiển thị thông tin email/avatar + nút **"Đăng xuất"**.
+- Khi bấm đồng bộ: Gọi `linkWithCredential`. Nếu bắt lỗi `credential-already-in-use` → hiện Dialog 3 lựa chọn như trên.
+
+#### [MODIFY] Backend: `src/entity/User.java`
+- Đổi trường `email`: bỏ `nullable = false` và `unique = true` → cho phép null (tài khoản ẩn danh không có email).
+
+#### [MODIFY] Backend: `FirebaseTokenFilter.java`
+- Logic auto-create user khi token mới: email có thể null → không crash.
+- Logic auto-update: khi user link Google → request tiếp theo sẽ mang email/name/photo → filter tự cập nhật vào DB.
+
+---
+
+### 5.2 Backend: Purchase Verification
 
 #### [NEW] Backend: `src/entity/Purchase.java`
 ```java
@@ -452,31 +511,30 @@ public class Purchase {
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/purchases/verify` | Verify purchase receipt |
+| POST | `/api/v1/purchases/verify` | Nhận `purchaseToken`, verify receipt và liên kết với `uid` đang đăng nhập |
 | GET | `/api/v1/purchases/status` | Check subscription status |
 
 #### [NEW] Backend: `src/service/PurchaseService.java` + `impl/PurchaseServiceImpl.java`
-- Chống hack (Lucky Patcher/fake tools): Bắt buộc kiểm tra tính hợp lệ của `orderId`, purchase token. Nếu phát hiện biên lai giả → reject ngay lập tức (cho cút luôn).
-- Verify receipt với Google Play Developer API
-- Verify receipt với App Store Server API
-- Lưu purchase record
+- Chống hack: Bắt buộc kiểm tra tính hợp lệ của `orderId`, purchase token.
+- Verify receipt với Google Play Developer API.
+- Liên kết token với tài khoản App (`Mail B` trong kịch bản IAP). Nếu token chuyển sang user khác thì thu hồi premium của user cũ.
 
 #### [MODIFY] Backend: `build.gradle.kts`
 - Thêm `com.google.apis:google-api-services-androidpublisher` dependency
 
 ---
 
-### 5.2 Client: IAP improvements
+### 5.3 Client: IAP improvements
 
 #### [MODIFY] [iap_bloc.dart](file:///C:/english_practice/english_practice_client/lib/ui/blocs/iap/iap_bloc.dart)
 - Sau purchase thành công (stream `_processPurchase`) → gọi `POST /api/v1/purchases/verify` trước khi gọi `GlobalValues.setBoughtNoAdsTime()`
 - Nếu backend verify **thành công** → set premium bình thường
-- Nếu backend verify **thất bại** (orderId giả, token invalid) → không set premium, gọi `InAppPurchase.instance.completePurchase()` để clear queue, hiển thị error message
-- Nếu backend **không trả lời** (network error) → graceful degradation: tạm thời allow premium và retry verify khi có mạng (tránh block user hợp lệ)
+- Nếu backend verify **thất bại** → không set premium, gọi `InAppPurchase.instance.completePurchase()`, hiển thị error message
+- Thêm logic hỗ trợ nút "Khôi phục giao dịch" (Restore Purchase) gọi Play Store lấy token gửi backend để sync Premium.
 
 #### [MODIFY] [paywall_dialog.dart](file:///C:/english_practice/english_practice_client/lib/ui/commons/dialogs/paywall_dialog.dart)
 - Thêm bảng so sánh tính năng Free vs Premium vào nội dung dialog hiện tại.
-- Giữ nguyên style layout của dialog, không thay đổi màu sắc hay animation.
+- Thêm nút "Khôi phục giao dịch" (Restore Purchase).
 
 ---
 

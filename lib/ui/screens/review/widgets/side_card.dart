@@ -88,7 +88,7 @@ class _SideCardState extends State<SideCard> {
                         onPressed: _saveDefinition,
                         padding: const EdgeInsets.all(0),
                         borderRadius: 16,
-                        child: Text('Save'),
+                        child: Text(L10n.tr(context, 'save')),
                       ),
                     ],
                   ),

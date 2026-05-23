@@ -20,6 +20,7 @@ import 'widgets/profile_field.dart';
 import 'widgets/theme_item.dart';
 import '../../../utils/l10n.dart';
 
+import '../../../data/repositories/auth_repository.dart';
 import '../../blocs/auth/auth_cubit.dart';
 import '../../blocs/auth/auth_state.dart';
 
@@ -78,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 16),
-                            if (authState.user != null)
+                            if (authState.user != null && !authState.user!.isAnonymous)
                               Row(
                                 children: [
                                   CircleAvatar(
@@ -116,9 +117,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               )
                             else
                               RoundedButton(
-                                onPressed: () {
-                                  context.read<AuthCubit>().signInWithGoogle();
-                                },
+                                onPressed: authState.isLoading
+                                    ? null
+                                    : () => _onSyncWithGoogle(context),
                                 borderRadius: 16,
                                 child: authState.isLoading
                                     ? const SizedBox(
@@ -129,9 +130,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(Icons.login),
+                                          const Icon(Icons.sync),
                                           const SizedBox(width: 8),
-                                          Text(L10n.tr(context, "sign_in_with_google")),
+                                          Text(L10n.tr(context, "sync_with_google")),
                                         ],
                                       ),
                               ),
@@ -408,6 +409,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _onSyncWithGoogle(BuildContext context) async {
+    final authCubit = context.read<AuthCubit>();
+    final result = await authCubit.linkWithGoogle();
+
+    if (!context.mounted) return;
+
+    switch (result) {
+      case LinkResult.success:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10n.tr(context, "sync_success")),
+            backgroundColor: Colors.green,
+          ),
+        );
+        break;
+      case LinkResult.credentialAlreadyInUse:
+        _showAccountConflictDialog(context);
+        break;
+      case LinkResult.cancelled:
+        break;
+      case LinkResult.error:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authCubit.state.errorMessage ?? L10n.tr(context, "sync_error")),
+            backgroundColor: Colors.red,
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showAccountConflictDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.cloud_download, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                L10n.tr(context, "account_conflict_title"),
+                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          L10n.tr(context, "account_conflict_message"),
+          style: textTheme.bodyMedium,
+        ),
+        actions: [
+          // Option 1: Load existing data
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.read<AuthCubit>().signInWithGoogle();
+              },
+              icon: const Icon(Icons.cloud_download),
+              label: Text(L10n.tr(context, "load_existing_data")),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Option 2: Use different Gmail
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final authCubit = context.read<AuthCubit>();
+                final result = await authCubit.linkWithDifferentGoogle();
+                if (context.mounted && result == LinkResult.credentialAlreadyInUse) {
+                  _showAccountConflictDialog(context);
+                }
+              },
+              icon: const Icon(Icons.switch_account),
+              label: Text(L10n.tr(context, "use_different_gmail")),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Option 3: Cancel
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(L10n.tr(context, "go_back")),
+            ),
+          ),
+        ],
       ),
     );
   }

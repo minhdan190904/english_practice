@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:english_practice/ui/commons/rounded_button.dart';
@@ -124,7 +125,7 @@ Start your journey to fluent English today! 🔥📖
                           }
                         }
                       } : null,
-                      child: Text("Share your streak to get 1 day free trial"),
+                      child: Text(L10n.tr(context, 'share_streak_for_trial')),
                     )
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'app.dart';
 import 'configs/di.dart';
@@ -36,7 +38,7 @@ void main() async {
     ),
   );
 
-  Future<T> runStep<T>(String name, Future<T> Function() action) async {
+  Future<T?> runStep<T>(String name, Future<T> Function() action) async {
     debugPrint('Startup: $name - start');
     try {
       final result = await action();
@@ -45,7 +47,8 @@ void main() async {
     } catch (e, stack) {
       debugPrint('Startup: $name - error: $e');
       debugPrint(stack.toString());
-      rethrow;
+      GlobalValues.startupLogs.add('Startup: $name - error: $e\n$stack');
+      return null;
     }
   }
 
@@ -75,6 +78,17 @@ void main() async {
 
   await runStep('OxfordWordsRepository.initData', () => DI().sl<OxfordWordsRepository>().initData());
 
+  // Auto sign-in anonymously if no user is currently signed in
+  await runStep('AnonymousAuth', () async {
+    final firebaseAuth = FirebaseAuth.instance;
+    if (firebaseAuth.currentUser == null) {
+      await firebaseAuth.signInAnonymously();
+      debugPrint('Signed in anonymously: ${firebaseAuth.currentUser?.uid}');
+    } else {
+      debugPrint('Already signed in: ${firebaseAuth.currentUser?.uid} (anonymous: ${firebaseAuth.currentUser?.isAnonymous})');
+    }
+  });
+
   if (appFlavor != 'production' || kDebugMode) {
     debugPrint('setAnalyticsCollectionEnabled false');
     await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(false);
@@ -97,7 +111,7 @@ void main() async {
   tz.initializeTimeZones();
   final currentTimeZone = await runStep('FlutterTimezone.getLocalTimezone', () => FlutterTimezone.getLocalTimezone());
   runStep('tz.setLocalLocation', () async {
-    tz.setLocalLocation(tz.getLocation(currentTimeZone));
+    tz.setLocalLocation(tz.getLocation(currentTimeZone ?? 'UTC'));
   });
 
   runApp(

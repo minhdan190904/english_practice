@@ -1,4 +1,5 @@
 
+import '../../../../utils/l10n.dart';
 import 'package:flash_card/flash_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

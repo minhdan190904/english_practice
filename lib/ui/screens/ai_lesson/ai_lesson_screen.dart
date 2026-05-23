@@ -42,7 +42,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
                 }
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Failed to load categories', style: TextStyle(color: colorScheme.error)),
+                    child: Text(L10n.tr(context, 'failed_to_load_categories'), style: TextStyle(color: colorScheme.error)),
                   );
                 }
                 final categories = snapshot.data ?? [];

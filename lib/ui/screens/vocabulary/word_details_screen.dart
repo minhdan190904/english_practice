@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -125,7 +126,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       if (sense.examples.isNotEmpty) ...[
-                        Text("Examples:"),
+                        Text(L10n.tr(context, 'examples')),
                         const SizedBox(height: 8),
                         ...List.generate(
                           sense.examples.length,

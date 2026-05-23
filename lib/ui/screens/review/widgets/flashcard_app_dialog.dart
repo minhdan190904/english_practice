@@ -1,3 +1,4 @@
+import '../../../../../utils/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -84,7 +85,7 @@ class FlashcardAppDialog extends StatelessWidget {
       actions: [
         RoundedButton(
           onPressed: () => _onGotIt(context),
-          child: Text("Got it!"),
+          child: Text(L10n.tr(context, 'got_it')),
         ),
         const SizedBox(height: 8),
         RoundedButton(

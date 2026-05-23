@@ -1,3 +1,4 @@
+import '../../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -114,7 +115,7 @@ class _ScheduleModalState extends State<ScheduleModal> {
           RoundedButton(
             onPressed: () => _scheduleNotifications(widget.reviewWords),
             borderRadius: 16,
-            child: Text("Remind me"),
+            child: Text(L10n.tr(context, 'remind_me')),
           ),
         ],
       ),

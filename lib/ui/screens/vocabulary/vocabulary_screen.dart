@@ -18,6 +18,7 @@ import 'bloc/vocabulary_bloc.dart';
 import 'widgets/search_box.dart';
 import 'widgets/vocabulary_item.dart';
 import '../../../utils/l10n.dart';
+import '../../../utils/global_values.dart';
 
 class VocabularyScreen extends StatefulWidget {
   final int? wordId;
@@ -228,6 +229,23 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     super.initState();
     _showWordDetails();
     _listenNotificationsBloc();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (GlobalValues.startupLogs.isNotEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(L10n.tr(context, 'startup_errors')),
+            content: SingleChildScrollView(
+              child: Text(GlobalValues.startupLogs.join('\n\n')),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: Text(L10n.tr(context, 'ok')))
+            ],
+          ),
+        );
+      }
+    });
   }
 
   @override

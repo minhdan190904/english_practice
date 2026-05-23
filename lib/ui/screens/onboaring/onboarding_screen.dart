@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
@@ -107,7 +108,7 @@ An **adjective** is a word that describes or modifies a noun or pronoun by provi
                                     });
                                   }
                                 : null,
-                            child: const Text('Start learning'),
+                            child: Text(L10n.tr(context, 'start_learning')),
                           ),
                         ),
                       ),
@@ -135,7 +136,7 @@ An **adjective** is a word that describes or modifies a noun or pronoun by provi
               child: RoundedButton(
                 borderRadius: 16,
                 onPressed: _onNext,
-                child: const Text('Next'),
+                child: Text(L10n.tr(context, 'next')),
               ),
             ),
           )

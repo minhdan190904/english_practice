@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/sample_passage_response.dart';
 import '../../../data/repositories/ai_repository.dart';
@@ -52,7 +53,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not generate sample. Please try again.')),
+          SnackBar(content: Text(L10n.tr(context, 'could_not_generate_sample'))),
         );
       }
     } finally {
@@ -68,7 +69,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Topic', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(L10n.tr(context, 'select_topic'), style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Column(
@@ -172,7 +173,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
                     ? const SizedBox(
                         width: 24, height: 24,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Generate Sample', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    : Text(L10n.tr(context, 'generate_sample'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ),

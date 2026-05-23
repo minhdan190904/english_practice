@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/lesson_result.dart';
 import '../../../data/models/sample_passage_response.dart';
@@ -97,7 +98,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating lesson: $e')),
+          SnackBar(content: Text('${L10n.tr(context, 'error_generating_lesson')}$e')),
         );
       }
     } finally {
@@ -159,14 +160,14 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                         children: [
                           Text(_selectedLevelLabel,
                             style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                          Text("Here's your current English level.",
+                          Text(L10n.tr(context, 'current_english_level'),
                             style: textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
                         ],
                       ),
                     ),
                     TextButton(
                       onPressed: _openLevelPicker,
-                      child: Text('Change', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
+                      child: Text(L10n.tr(context, 'change'), style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),
@@ -180,7 +181,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Text('Input text to learn',
+                      Text(L10n.tr(context, 'input_text_to_learn'),
                         style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(width: 6),
                       const Icon(Icons.info_outline_rounded, size: 16, color: Colors.grey),
@@ -203,7 +204,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                     }
                   },
                   icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                  label: const Text('Sample'),
+                  label: Text(L10n.tr(context, 'sample')),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.primary,
                     side: BorderSide(color: colorScheme.primary),
@@ -272,11 +273,11 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                              SizedBox(width: 8),
-                              Text('Create Lesson with AI',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            children: [
+                              const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(L10n.tr(context, 'create_lesson_with_ai'),
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                             ],
                           ),
                   ),

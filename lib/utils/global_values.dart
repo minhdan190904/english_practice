@@ -59,4 +59,6 @@ class GlobalValues {
   static set isShowFreeTrial(bool value) {
     _sharedPreferences?.setBool(isShowFreeTrialKey, value);
   }
+
+  static List<String> startupLogs = [];
 }

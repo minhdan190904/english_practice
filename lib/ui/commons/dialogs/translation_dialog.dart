@@ -1,3 +1,4 @@
+import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -63,7 +64,7 @@ class _TranslateDialogState extends State<TranslateDialog> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             IconButton(onPressed: () {}, icon: const Icon(Icons.translate)),
-                            Text("Translate", style: Theme.of(context).textTheme.bodyLarge),
+                            Text(L10n.tr(context, 'translate'), style: Theme.of(context).textTheme.bodyLarge),
                             IconButton(
                                 onPressed: () {
                                   Navigator.of(context).pop();
@@ -222,7 +223,7 @@ class _TranslateDialogState extends State<TranslateDialog> {
                         const SizedBox(height: 8),
                         RoundedButton(
                           borderRadius: 16,
-                          child: Text("Translate"),
+                          child: Text(L10n.tr(context, 'translate')),
                           onPressed: () {
                             if (_sourceController.text.isEmpty) {
                               return;
@@ -356,7 +357,7 @@ class _TranslateDialogState extends State<TranslateDialog> {
       return;
     }
     Clipboard.setData(ClipboardData(text: _targetController.text));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Copied to clipboard")));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.tr(context, 'copied_to_clipboard'))));
   }
 
   void _onDelete() {
