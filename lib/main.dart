@@ -13,7 +13,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:firebase_auth/firebase_auth.dart';
 
 import 'app.dart';
 import 'configs/di.dart';

@@ -1,167 +1,430 @@
-import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../../constants/custom_colors.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
-import '../../../generated/assets.dart';
 import '../../../navigation/app_router.dart';
-import '../../../utils/app_snack_bar.dart';
 import '../../../utils/global_values.dart';
-import '../../blocs/iap/iap_bloc.dart';
-import '../../commons/ads/banner_ad_widget.dart';
-import '../../commons/ads/interstitial_ad_mixin.dart';
-import '../../commons/base_page.dart';
-import '../../commons/rounded_button.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
 import 'widgets/flashcard_app_dialog.dart';
-import 'widgets/positioned_flash_card.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  FlashCard Screen
+// ─────────────────────────────────────────────────────────────────────────────
 class FlashCardScreen extends StatefulWidget {
   final List<Word> words;
+  final String? title;
 
-  const FlashCardScreen({super.key, required this.words});
+  const FlashCardScreen({super.key, required this.words, this.title});
 
   @override
   State<FlashCardScreen> createState() => _FlashCardScreenState();
 }
 
-class _FlashCardScreenState extends State<FlashCardScreen> with InterstitialAdMixin {
-  final List<Word> _words = [];
-  final List<PositionedFlashCardController> _controllers = [];
-  bool _animating = false;
+class _FlashCardScreenState extends State<FlashCardScreen>
+    with SingleTickerProviderStateMixin {
+  // ── word list state ──────────────────────────────────────────────────────
+  late List<Word> _remainingWords;
+  late List<Word> _dontKnowWords;
+  int _currentIndex = 0;
+  int _totalWords = 0;
+
+  // ── flip animation ───────────────────────────────────────────────────────
+  late AnimationController _flipController;
+  late Animation<double> _flipAnimation;
+  bool _isFrontVisible = true; // tracks which face is showing
+  bool _isAnimating = false;
+
+  bool get _isFlipped => !_isFrontVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingWords = List.from(widget.words);
+    _dontKnowWords = [];
+    _totalWords = widget.words.length;
+
+    // AnimationController drives 0.0 → 1.0 (= 0° → 180°)
+    _flipController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+
+    _flipAnimation = CurvedAnimation(
+      parent: _flipController,
+      curve: Curves.easeInOut,
+    );
+
+    // Swap the visible face exactly at the halfway point (card is edge-on)
+    _flipController.addListener(() {
+      final val = _flipController.value;
+      if (val >= 0.5 && _isFrontVisible) {
+        setState(() => _isFrontVisible = false);
+      } else if (val < 0.5 && !_isFrontVisible) {
+        setState(() => _isFrontVisible = true);
+      }
+    });
+
+    _flipController.addStatusListener((status) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
+        _isAnimating = false;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _flipController.dispose();
+    super.dispose();
+  }
+
+  // ── helpers ──────────────────────────────────────────────────────────────
+  int get _completedCount => _totalWords - _remainingWords.length;
+  double get _progress =>
+      _totalWords == 0 ? 0 : (_completedCount / _totalWords);
+  Word get _currentWord => _remainingWords[_currentIndex];
+
+  void _flipCard() {
+    if (_isAnimating) return;
+    _isAnimating = true;
+    if (_flipController.isDismissed) {
+      _flipController.forward();
+    } else {
+      _flipController.reverse();
+    }
+  }
+
+  /// Reset card to front face (for moving to next word)
+  void _resetToFront({bool animate = false}) {
+    if (animate) {
+      if (!_flipController.isDismissed) _flipController.reverse();
+    } else {
+      _flipController.reset();
+      setState(() => _isFrontVisible = true);
+    }
+  }
+
+  void _onNext() {
+    if (_currentIndex < _remainingWords.length - 1) {
+      _resetToFront();
+      setState(() => _currentIndex++);
+    }
+  }
+
+  void _onIKnow() {
+    if (!_isFlipped) {
+      _flipCard();
+      return;
+    }
+    context.read<VocabularyBloc>().add(
+          VocabularyEvent.changeStatus(_currentWord, WordStatus.mastered),
+        );
+    _resetToFront();
+    setState(() {
+      _remainingWords.removeAt(_currentIndex);
+      if (_remainingWords.isEmpty) {
+        _onAllDone();
+        return;
+      }
+      if (_currentIndex >= _remainingWords.length) {
+        _currentIndex = _remainingWords.length - 1;
+      }
+    });
+  }
+
+  void _onDontKnow() {
+    if (!_isFlipped) {
+      _flipCard();
+      return;
+    }
+    _resetToFront();
+    setState(() {
+      final word = _remainingWords.removeAt(_currentIndex);
+      _dontKnowWords.add(word);
+      _remainingWords.add(word); // re-queue at end
+      if (_currentIndex >= _remainingWords.length) {
+        _currentIndex = _remainingWords.length - 1;
+      }
+    });
+  }
+
+  void _onAllDone() {
+    if (!GlobalValues.isShowInAppReview) {
+      InAppReview.instance.requestReview();
+      GlobalValues.isShowInAppReview = true;
+    } else if (!GlobalValues.isShowFlashCardAppDialog) {
+      GlobalValues.isShowFlashCardAppDialog = true;
+      showDialog(context: context, builder: (_) => FlashcardAppDialog());
+    }
+    if (context.canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      context.go(RoutePaths.vocabulary);
+    }
+  }
+
+  // ── build ────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (_remainingWords.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final bgColor = colorScheme.primary;
+
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (!GlobalValues.isShowFlashCardAppDialog) {
+          GlobalValues.isShowFlashCardAppDialog = true;
+          showDialog(context: context, builder: (_) => FlashcardAppDialog());
+        }
+      },
+      child: Scaffold(
+        backgroundColor: bgColor,
+        appBar: AppBar(
+          backgroundColor: bgColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text(
+            widget.title ?? 'Flashcards',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: false,
+        ),
+        body: Column(
+          children: [
+            // ── Progress ───────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Text(
+                    '${_currentIndex + 1} of ${_remainingWords.length}',
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${(_progress * 100).toInt()}%',
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  backgroundColor: Colors.white.withAlpha(60),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                  minHeight: 5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Flip Card ─────────────────────────────────────────────
+            Expanded(
+              child: GestureDetector(
+                onTap: _flipCard,
+                child: _FlipCard(
+                  animation: _flipAnimation,
+                  isFrontVisible: _isFrontVisible,
+                  frontChild: _FrontCard(word: _currentWord),
+                  backChild: _BackCard(word: _currentWord),
+                ),
+              ),
+            ),
+
+            // ── Bottom Bar ────────────────────────────────────────────
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: _isFlipped
+                  ? _KnowButtons(
+                      key: const ValueKey('know'),
+                      onDontKnow: _onDontKnow,
+                      onIKnow: _onIKnow,
+                    )
+                  : _TapHintBar(
+                      key: const ValueKey('hint'),
+                      onNext: _currentIndex < _remainingWords.length - 1
+                          ? _onNext
+                          : null,
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  _FlipCard  — The core 3D flip widget
+//
+//  Pattern (industry standard):
+//    • One AnimationController 0..1 drives rotation 0..π
+//    • AnimatedBuilder rebuilds only the Transform (no full tree rebuild)
+//    • Back child is PRE-ROTATED by π so it appears correct after the flip
+//    • setEntry(3,2,0.001) adds real 3D perspective depth
+// ─────────────────────────────────────────────────────────────────────────────
+class _FlipCard extends StatelessWidget {
+  final Animation<double> animation;
+  final bool isFrontVisible;
+  final Widget frontChild;
+  final Widget backChild;
+
+  const _FlipCard({
+    required this.animation,
+    required this.isFrontVisible,
+    required this.frontChild,
+    required this.backChild,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        // animation.value goes 0 → 1  (i.e. 0° → 180°)
+        final angle = animation.value * pi;
+
+        final transform = Matrix4.identity()
+          ..setEntry(3, 2, 0.001) // perspective
+          ..rotateY(angle);
+
+        return Transform(
+          alignment: Alignment.center,
+          transform: transform,
+          child: isFrontVisible
+              ? frontChild
+              // Pre-rotate the back face by π so after the overall π rotation
+              // the text is upright (not mirrored).
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(pi),
+                  child: backChild,
+                ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Front Card
+// ─────────────────────────────────────────────────────────────────────────────
+class _FrontCard extends StatelessWidget {
+  final Word word;
+
+  const _FrontCard({required this.word});
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final size = MediaQuery.of(context).size;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
-    return PopScope(
-      onPopInvokedWithResult: (_, __) {
-        debugPrint('PopScope invoked');
-        if (!GlobalValues.isShowInAppReview) {
-          debugPrint('Requesting review');
-          InAppReview.instance.requestReview();
-          GlobalValues.isShowInAppReview = true;
-        } else if (!GlobalValues.isShowFlashCardAppDialog) {
-          debugPrint('Showing dialog');
-          GlobalValues.isShowFlashCardAppDialog = true;
-          showDialog(context: context, builder: (_) => FlashcardAppDialog());
-        } else {
-          debugPrint('Showing interstitial');
-          showInterstitialAd();
-        }
-      },
-      child: BasePage(
-        title: 'Flashcards',
-        padding: const EdgeInsets.all(0),
-        child: Stack(
-          children: [
-            BannerAdWidget(
-              isPremium: isPremium,
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-            Column(
-              children: [
-                const Spacer(),
-                SizedBox(
-                  height: size.height * 0.4,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: List.generate(
-                      _words.length,
-                      (index) {
-                        final word = _words[index];
-                        return PositionedFlashCard(
-                          key: ValueKey(word.index),
-                          controller: _controllers[index],
-                          word: word,
-                        );
-                      },
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.quiz_outlined,
+                  size: 36, color: colorScheme.primary.withAlpha(160)),
+            ),
+            const SizedBox(height: 24),
+            // Word
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                word.word,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Phonetic pill
+            if (word.phoneticText.isNotEmpty)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withAlpha(18),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                      color: colorScheme.primary.withAlpha(40), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.volume_up_rounded,
+                        size: 16, color: colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      word.phoneticText,
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.touch_app_rounded,
+                    size: 16, color: Colors.grey[400]),
+                const SizedBox(width: 6),
+                Text(
+                  'Tap to reveal meaning',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
                   ),
                 ),
-                const Spacer(),
-                GlobalValues.isShowFlashCardAppDialog
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: _openFlashcardApp,
-                            child: Text(
-                              "Try advance flashcard",
-                              style: textTheme.titleSmall?.copyWith(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: RoundedButton(
-                          backgroundColor: CustomColors.red,
-                          onPressed: _onCheckBack,
-                          borderRadius: 16,
-                          child: Row(
-                            children: [
-                              SvgPicture.asset(
-                                Assets.svgUndo,
-                                colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                                height: 16,
-                                width: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Check back",
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: RoundedButton(
-                          backgroundColor: CustomColors.green,
-                          onPressed: _onMastered,
-                          borderRadius: 16,
-                          child: Row(
-                            children: [
-                              SvgPicture.asset(
-                                Assets.svgCheck,
-                                colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                                height: 16,
-                                width: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Mastered",
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
               ],
             ),
           ],
@@ -169,60 +432,218 @@ class _FlashCardScreenState extends State<FlashCardScreen> with InterstitialAdMi
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Back Card
+// ─────────────────────────────────────────────────────────────────────────────
+class _BackCard extends StatelessWidget {
+  final Word word;
+
+  const _BackCard({required this.word});
 
   @override
-  void initState() {
-    super.initState();
-    _words.addAll(widget.words);
-    _controllers.addAll(List.generate(widget.words.length, (index) => PositionedFlashCardController()));
-  }
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final definition =
+        word.userDefinition ?? word.senses.firstOrNull?.definition ?? '';
+    final example =
+        word.senses.firstOrNull?.examples.firstOrNull?.x ?? '';
 
-  void _onCheckBack() async {
-    if (_animating) {
-      return;
-    }
-    if (_words.length == 1) {
-      AppSnackBar.showError(context, "You can't check back the last word");
-      return;
-    }
-    _animating = true;
-    await _controllers.last.checkBack();
-    setState(() {
-      _words.insert(0, _words.removeLast());
-      _controllers.insert(0, _controllers.removeLast());
-    });
-    _animating = false;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('💡', style: TextStyle(fontSize: 40)),
+              const SizedBox(height: 16),
+              // Word
+              Text(
+                word.word,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              // Definition
+              if (definition.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCE8FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    definition,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF1A3A7A),
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (example.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                // Example
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Example:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        example,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green[800],
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
 
-  void _onMastered() async {
-    if (_animating) {
-      return;
-    }
-    _animating = true;
-    await _controllers.last.mastered();
-    late Word masteredWord;
-    setState(() {
-      masteredWord = _words.removeLast();
-      _controllers.removeLast();
-    });
-    if (mounted) {
-      context.read<VocabularyBloc>().add(VocabularyEvent.changeStatus(masteredWord, WordStatus.mastered));
-      if (_words.isEmpty) {
-        if (!context.canPop()) {
-          context.go(RoutePaths.vocabulary);
-          return;
-        }
-        Navigator.of(context).pop();
-      }
-    }
-    _animating = false;
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+//  Bottom bars
+// ─────────────────────────────────────────────────────────────────────────────
+class _TapHintBar extends StatelessWidget {
+  final VoidCallback? onNext;
 
-  _openFlashcardApp() {
-    final url = Platform.isIOS ? const String.fromEnvironment('IOS_FLASHCARD_APP_URL') : const String.fromEnvironment('ANDROID_FLASHCARD_APP_URL');
-    launchUrl(Uri.parse(url));
-  }
+  const _TapHintBar({super.key, this.onNext});
 
   @override
-  bool get isPremium => context.read<IapBloc>().state.boughtNoAdsTime != null;
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.touch_app_rounded, color: Colors.white70, size: 22),
+              const SizedBox(height: 4),
+              const Text('Tap card to flip',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+            ],
+          ),
+          if (onNext != null)
+            GestureDetector(
+              onTap: onNext,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white70, size: 22),
+                  SizedBox(height: 4),
+                  Text('Next',
+                      style:
+                          TextStyle(color: Colors.white70, fontSize: 13)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KnowButtons extends StatelessWidget {
+  final VoidCallback onDontKnow;
+  final VoidCallback onIKnow;
+
+  const _KnowButtons({
+    super.key,
+    required this.onDontKnow,
+    required this.onIKnow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: onDontKnow,
+              icon: const Text('✕', style: TextStyle(fontSize: 16)),
+              label: const Text("Don't Know",
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE53935),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: onIKnow,
+              icon: const Text('✓', style: TextStyle(fontSize: 16)),
+              label: const Text("I Know",
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF43A047),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -111,11 +111,12 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             BlocProvider(create: (_) => DI().sl<VocabularyBloc>()),
             BlocProvider(create: (_) => DI().sl<IapBloc>()),
           ],
-          child: FlashCardScreen(words: words),
+          child: FlashCardScreen(words: words, title: widget.title),
         ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

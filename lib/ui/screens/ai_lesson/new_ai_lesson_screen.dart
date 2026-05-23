@@ -1,10 +1,9 @@
-import '../../../../utils/l10n.dart';
+import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
-import '../../../data/models/lesson_result.dart';
+import 'package:get_it/get_it.dart';
 import '../../../data/models/sample_passage_response.dart';
+import '../../../data/models/saved_lesson.dart';
 import '../../../data/repositories/ai_repository.dart';
-import '../../../configs/di.dart';
-import '../../commons/rounded_button.dart';
 import 'ai_lesson_detail_screen.dart';
 import 'select_level_screen.dart';
 import 'select_topic_screen.dart';
@@ -22,7 +21,6 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
   String _selectedLevelLabel = 'B1 - Intermediate';
   bool _isLoading = false;
 
-  // Words coming from the last Sample generation
   List<SelectedWord> _sampleWords = [];
 
   int get _wordCount {
@@ -61,15 +59,13 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final aiRepository = DI().sl<AiRepository>();
+      final aiRepository = GetIt.instance<AiRepository>();
 
       final result = await aiRepository.generateLesson(
         customText: customText,
         level: _selectedLevelCode,
       );
 
-      // If we have sampleWords from the sample generation, use those.
-      // Otherwise create minimal SelectedWord list from vocabulary in result.
       final wordsForDetail = _sampleWords.isNotEmpty
           ? _sampleWords
           : result.vocabulary
@@ -82,6 +78,27 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                     phoneticText: v.pronunciation,
                   ))
               .toList();
+
+      // Auto-save lesson to local storage
+      final lesson = SavedLesson(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: result.title,
+        passage: result.passage,
+        words: wordsForDetail
+            .map((w) => SavedWord(
+                  word: w.word,
+                  definition: w.definition,
+                  example: w.example,
+                  phoneticText: w.phoneticText,
+                  phoneticAmText: w.phoneticAmText,
+                  pos: w.pos,
+                  level: w.level,
+                  category: w.category,
+                ))
+            .toList(),
+        createdAt: DateTime.now(),
+      );
+      await SavedLessonsRepository().save(lesson);
 
       if (mounted) {
         Navigator.push(
@@ -118,13 +135,14 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.smart_toy_rounded, color: colorScheme.primary),
             const SizedBox(width: 8),
-            Text('New Lesson',
+            Text(L10n.tr(context, 'new_lesson'),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.primary,
