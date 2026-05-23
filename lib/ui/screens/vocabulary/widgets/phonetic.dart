@@ -33,7 +33,8 @@ class _PhoneticState extends State<Phonetic> {
           svg: Assets.svgVolumeUp,
           backgroundColor: widget.backgroundColor,
           color: Colors.white,
-          size: 16,
+          size: 24, // Tăng kích thước từ 20 lên 24
+          padding: const EdgeInsets.all(8), // Tăng vùng tap lên 8
           onPressed: _playSound,
         ),
         const SizedBox(width: 8),

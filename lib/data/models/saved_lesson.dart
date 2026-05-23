@@ -5,6 +5,7 @@ class SavedLesson {
   final String id;
   final String title;
   final String passage;
+  final String? passageVi;
   final List<SavedWord> words;
   final DateTime createdAt;
 
@@ -12,6 +13,7 @@ class SavedLesson {
     required this.id,
     required this.title,
     required this.passage,
+    this.passageVi,
     required this.words,
     required this.createdAt,
   });
@@ -27,6 +29,7 @@ class SavedLesson {
         'id': id,
         'title': title,
         'passage': passage,
+        'passageVi': passageVi,
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
       };
@@ -35,6 +38,7 @@ class SavedLesson {
         id: json['id'] ?? '',
         title: json['title'] ?? '',
         passage: json['passage'] ?? '',
+        passageVi: json['passageVi'],
         words: (json['words'] as List? ?? [])
             .map((w) => SavedWord.fromJson(w))
             .toList(),
@@ -45,9 +49,13 @@ class SavedLesson {
 class SavedWord {
   final String word;
   final String? definition;
+  final String? definitionVi;
+  final String? shortMeaningVi;
   final String? example;
   final String? phoneticText;
   final String? phoneticAmText;
+  final String? phoneticUrl;
+  final String? phoneticAmUrl;
   final String? pos;
   final String level;
   final String category;
@@ -55,9 +63,13 @@ class SavedWord {
   SavedWord({
     required this.word,
     this.definition,
+    this.definitionVi,
+    this.shortMeaningVi,
     this.example,
     this.phoneticText,
     this.phoneticAmText,
+    this.phoneticUrl,
+    this.phoneticAmUrl,
     this.pos,
     required this.level,
     required this.category,
@@ -66,9 +78,13 @@ class SavedWord {
   Map<String, dynamic> toJson() => {
         'word': word,
         'definition': definition,
+        'definitionVi': definitionVi,
+        'shortMeaningVi': shortMeaningVi,
         'example': example,
         'phoneticText': phoneticText,
         'phoneticAmText': phoneticAmText,
+        'phoneticUrl': phoneticUrl,
+        'phoneticAmUrl': phoneticAmUrl,
         'pos': pos,
         'level': level,
         'category': category,
@@ -77,9 +93,13 @@ class SavedWord {
   factory SavedWord.fromJson(Map<String, dynamic> json) => SavedWord(
         word: json['word'] ?? '',
         definition: json['definition'],
+        definitionVi: json['definitionVi'],
+        shortMeaningVi: json['shortMeaningVi'],
         example: json['example'],
         phoneticText: json['phoneticText'],
         phoneticAmText: json['phoneticAmText'],
+        phoneticUrl: json['phoneticUrl'],
+        phoneticAmUrl: json['phoneticAmUrl'],
         pos: json['pos'],
         level: json['level'] ?? '',
         category: json['category'] ?? '',

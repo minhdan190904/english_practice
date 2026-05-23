@@ -74,8 +74,11 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                     level: _selectedLevelCode,
                     category: '',
                     definition: v.meaning,
+                    definitionVi: v.meaningVi,
                     example: v.example,
                     phoneticText: v.pronunciation,
+                    phoneticUrl: v.phoneticUrl,
+                    phoneticAmUrl: v.phoneticAmUrl,
                   ))
               .toList();
 
@@ -84,13 +87,18 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: result.title,
         passage: result.passage,
+        passageVi: result.passageVi,
         words: wordsForDetail
             .map((w) => SavedWord(
                   word: w.word,
                   definition: w.definition,
+                  definitionVi: w.definitionVi,
+                  shortMeaningVi: w.shortMeaningVi,
                   example: w.example,
                   phoneticText: w.phoneticText,
                   phoneticAmText: w.phoneticAmText,
+                  phoneticUrl: w.phoneticUrl,
+                  phoneticAmUrl: w.phoneticAmUrl,
                   pos: w.pos,
                   level: w.level,
                   category: w.category,
@@ -101,12 +109,12 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
       await SavedLessonsRepository().save(lesson);
 
       if (mounted) {
-        Navigator.push(
-          context,
+        Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
             builder: (_) => AiLessonDetailScreen(
               title: result.title,
               passage: result.passage,
+              passageVi: result.passageVi,
               selectedWords: wordsForDetail,
             ),
           ),

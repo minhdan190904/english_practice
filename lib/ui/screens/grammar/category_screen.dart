@@ -10,6 +10,7 @@ import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/ads/rewarded_ad_mixin.dart';
 import '../../commons/base_page.dart';
 import '../../commons/dialogs/paywall_dialog.dart';
+import '../../../utils/l10n.dart';
 import 'bloc/lesson_bloc.dart';
 import 'widget/category_item.dart';
 
@@ -39,9 +40,9 @@ class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
       child: Column(
         children: [
           TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search',
-              border: OutlineInputBorder(
+            decoration: InputDecoration(
+              hintText: L10n.tr(context, 'search'),
+              border: const OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
               prefixIcon: Icon(Icons.search),

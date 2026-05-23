@@ -1,6 +1,7 @@
 class SamplePassageResponse {
   final String title;
   final String passage;
+  final String? passageVi;
   final List<SelectedWord> selectedWords;
   final String category;
   final String level;
@@ -9,6 +10,7 @@ class SamplePassageResponse {
   SamplePassageResponse({
     required this.title,
     required this.passage,
+    this.passageVi,
     required this.selectedWords,
     required this.category,
     required this.level,
@@ -19,6 +21,7 @@ class SamplePassageResponse {
     return SamplePassageResponse(
       title: json['title'] ?? '',
       passage: json['passage'] ?? '',
+      passageVi: json['passageVi'],
       selectedWords: (json['selectedWords'] as List?)
               ?.map((e) => SelectedWord.fromJson(e))
               .toList() ??
@@ -36,9 +39,13 @@ class SelectedWord {
   final String category;
   final String? pos;
   final String? definition;
+  final String? definitionVi;
+  final String? shortMeaningVi;
   final String? example;
   final String? phoneticText;
   final String? phoneticAmText;
+  final String? phoneticUrl;
+  final String? phoneticAmUrl;
 
   SelectedWord({
     required this.word,
@@ -46,9 +53,13 @@ class SelectedWord {
     required this.category,
     this.pos,
     this.definition,
+    this.definitionVi,
+    this.shortMeaningVi,
     this.example,
     this.phoneticText,
     this.phoneticAmText,
+    this.phoneticUrl,
+    this.phoneticAmUrl,
   });
 
   factory SelectedWord.fromJson(Map<String, dynamic> json) {
@@ -58,9 +69,13 @@ class SelectedWord {
       category: json['category'] ?? '',
       pos: json['pos'],
       definition: json['definition'],
+      definitionVi: json['definitionVi'],
+      shortMeaningVi: json['shortMeaningVi'],
       example: json['example'],
       phoneticText: json['phoneticText'],
       phoneticAmText: json['phoneticAmText'],
+      phoneticUrl: json['phoneticUrl'],
+      phoneticAmUrl: json['phoneticAmUrl'],
     );
   }
 }

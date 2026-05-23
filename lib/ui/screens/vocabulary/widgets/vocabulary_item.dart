@@ -9,6 +9,7 @@ import '../../../../generated/assets.dart';
 import '../../../../navigation/app_router.dart';
 import '../../../commons/dialogs/user_definition_dialog.dart';
 import '../../../commons/svg_button.dart';
+import '../../settings/bloc/settings_bloc.dart';
 import '../bloc/vocabulary_bloc.dart';
 import 'phonetic.dart';
 import 'pos_badge.dart';
@@ -35,6 +36,8 @@ class VocabularyItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final locale = context.watch<SettingsBloc>().state.settingsSnapshot.locale;
+    final showVi = locale == 'vi';
     final pos = word.pos.split(', ');
     return InkWell(
       overlayColor: WidgetStateProperty.all(Colors.transparent),
@@ -121,7 +124,13 @@ class VocabularyItem extends StatelessWidget {
                         const SizedBox(height: 8),
                         if ((word.senses.isNotEmpty || word.userDefinition != null) && word.status != WordStatus.mastered)
                           Text(
-                            word.userDefinition != null ? "${word.userDefinition} (edited)" : word.senses.first.definition,
+                            word.userDefinition != null
+                                ? "${word.userDefinition} (edited)"
+                                : (showVi && word.senses.first.shortMeaningVi.isNotEmpty
+                                    ? word.senses.first.shortMeaningVi
+                                    : (showVi && word.senses.first.definitionVi.isNotEmpty
+                                        ? word.senses.first.definitionVi
+                                        : word.senses.first.definition)),
                             style: textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onPrimaryContainer,
                             ),

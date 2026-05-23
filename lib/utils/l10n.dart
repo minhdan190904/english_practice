@@ -107,6 +107,7 @@ class L10n {
       'word_pos': 'Word Pos: ',
       'letter': 'Letter: ',
       'status': 'Status : ',
+      'search': 'Search',
     },
     'vi': {
       'settings': 'Cài đặt',
@@ -211,6 +212,7 @@ class L10n {
       'word_pos': 'Từ loại: ',
       'letter': 'Chữ cái: ',
       'status': 'Trạng thái : ',
+      'search': 'Tìm kiếm',
     },
   };
 

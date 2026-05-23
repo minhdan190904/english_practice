@@ -45,18 +45,23 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
               category: w.category,
               pos: w.pos,
               definition: w.definition,
+              definitionVi: w.definitionVi,
+              shortMeaningVi: w.shortMeaningVi,
               example: w.example,
               phoneticText: w.phoneticText,
               phoneticAmText: w.phoneticAmText,
+              phoneticUrl: w.phoneticUrl,
+              phoneticAmUrl: w.phoneticAmUrl,
             ))
         .toList();
 
-    Navigator.of(context)
+    Navigator.of(context, rootNavigator: true)
         .push(
           MaterialPageRoute(
             builder: (_) => AiLessonDetailScreen(
               title: lesson.title,
               passage: lesson.passage,
+              passageVi: lesson.passageVi,
               selectedWords: selectedWords,
             ),
           ),

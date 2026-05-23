@@ -409,6 +409,7 @@ class _FrontCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -528,6 +529,7 @@ class _BackCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -546,33 +548,27 @@ class _BackCard extends StatelessWidget {
             children: [
               const Text('💡', style: TextStyle(fontSize: 40)),
               const SizedBox(height: 16),
+              // Short meaning (VI only) as the Main Headline!
+              if (shortMeaning != null) ...[
+                Text(
+                  shortMeaning,
+                  style: textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+              ],
+              // Original English word (subtitle if VI meaning exists)
               Text(
                 word.word,
-                style: textTheme.headlineMedium?.copyWith(
+                style: (shortMeaning != null ? textTheme.titleMedium : textTheme.headlineMedium)?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: shortMeaning != null ? Colors.black54 : Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
-              // Short meaning badge (VI only)
-              if (shortMeaning != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Text(
-                    shortMeaning,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 12),
               if (definition.isNotEmpty)
                 Container(
