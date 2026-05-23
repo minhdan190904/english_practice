@@ -24,6 +24,10 @@ mixin _$Sense {
   String get definition => throw _privateConstructorUsedError;
   @HiveField(1)
   List<Example> get examples => throw _privateConstructorUsedError;
+  @HiveField(2)
+  String get definitionVi => throw _privateConstructorUsedError;
+  @HiveField(3)
+  String get shortMeaningVi => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -36,7 +40,10 @@ abstract class $SenseCopyWith<$Res> {
       _$SenseCopyWithImpl<$Res, Sense>;
   @useResult
   $Res call(
-      {@HiveField(0) String definition, @HiveField(1) List<Example> examples});
+      {@HiveField(0) String definition,
+      @HiveField(1) List<Example> examples,
+      @HiveField(2) String definitionVi,
+      @HiveField(3) String shortMeaningVi});
 }
 
 /// @nodoc
@@ -54,6 +61,8 @@ class _$SenseCopyWithImpl<$Res, $Val extends Sense>
   $Res call({
     Object? definition = null,
     Object? examples = null,
+    Object? definitionVi = null,
+    Object? shortMeaningVi = null,
   }) {
     return _then(_value.copyWith(
       definition: null == definition
@@ -64,6 +73,14 @@ class _$SenseCopyWithImpl<$Res, $Val extends Sense>
           ? _value.examples
           : examples // ignore: cast_nullable_to_non_nullable
               as List<Example>,
+      definitionVi: null == definitionVi
+          ? _value.definitionVi
+          : definitionVi // ignore: cast_nullable_to_non_nullable
+              as String,
+      shortMeaningVi: null == shortMeaningVi
+          ? _value.shortMeaningVi
+          : shortMeaningVi // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -76,7 +93,10 @@ abstract class _$$SenseImplCopyWith<$Res> implements $SenseCopyWith<$Res> {
   @override
   @useResult
   $Res call(
-      {@HiveField(0) String definition, @HiveField(1) List<Example> examples});
+      {@HiveField(0) String definition,
+      @HiveField(1) List<Example> examples,
+      @HiveField(2) String definitionVi,
+      @HiveField(3) String shortMeaningVi});
 }
 
 /// @nodoc
@@ -92,6 +112,8 @@ class __$$SenseImplCopyWithImpl<$Res>
   $Res call({
     Object? definition = null,
     Object? examples = null,
+    Object? definitionVi = null,
+    Object? shortMeaningVi = null,
   }) {
     return _then(_$SenseImpl(
       definition: null == definition
@@ -102,6 +124,14 @@ class __$$SenseImplCopyWithImpl<$Res>
           ? _value._examples
           : examples // ignore: cast_nullable_to_non_nullable
               as List<Example>,
+      definitionVi: null == definitionVi
+          ? _value.definitionVi
+          : definitionVi // ignore: cast_nullable_to_non_nullable
+              as String,
+      shortMeaningVi: null == shortMeaningVi
+          ? _value.shortMeaningVi
+          : shortMeaningVi // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -111,7 +141,9 @@ class __$$SenseImplCopyWithImpl<$Res>
 class _$SenseImpl implements _Sense {
   const _$SenseImpl(
       {@HiveField(0) this.definition = "",
-      @HiveField(1) final List<Example> examples = const []})
+      @HiveField(1) final List<Example> examples = const [],
+      @HiveField(2) this.definitionVi = "",
+      @HiveField(3) this.shortMeaningVi = ""})
       : _examples = examples;
 
   factory _$SenseImpl.fromJson(Map<String, dynamic> json) =>
@@ -132,8 +164,17 @@ class _$SenseImpl implements _Sense {
   }
 
   @override
+  @JsonKey()
+  @HiveField(2)
+  final String definitionVi;
+  @override
+  @JsonKey()
+  @HiveField(3)
+  final String shortMeaningVi;
+
+  @override
   String toString() {
-    return 'Sense(definition: $definition, examples: $examples)';
+    return 'Sense(definition: $definition, examples: $examples, definitionVi: $definitionVi, shortMeaningVi: $shortMeaningVi)';
   }
 
   @override
@@ -143,13 +184,21 @@ class _$SenseImpl implements _Sense {
             other is _$SenseImpl &&
             (identical(other.definition, definition) ||
                 other.definition == definition) &&
-            const DeepCollectionEquality().equals(other._examples, _examples));
+            const DeepCollectionEquality().equals(other._examples, _examples) &&
+            (identical(other.definitionVi, definitionVi) ||
+                other.definitionVi == definitionVi) &&
+            (identical(other.shortMeaningVi, shortMeaningVi) ||
+                other.shortMeaningVi == shortMeaningVi));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-      runtimeType, definition, const DeepCollectionEquality().hash(_examples));
+      runtimeType,
+      definition,
+      const DeepCollectionEquality().hash(_examples),
+      definitionVi,
+      shortMeaningVi);
 
   @JsonKey(ignore: true)
   @override
@@ -168,7 +217,9 @@ class _$SenseImpl implements _Sense {
 abstract class _Sense implements Sense {
   const factory _Sense(
       {@HiveField(0) final String definition,
-      @HiveField(1) final List<Example> examples}) = _$SenseImpl;
+      @HiveField(1) final List<Example> examples,
+      @HiveField(2) final String definitionVi,
+      @HiveField(3) final String shortMeaningVi}) = _$SenseImpl;
 
   factory _Sense.fromJson(Map<String, dynamic> json) = _$SenseImpl.fromJson;
 
@@ -178,6 +229,12 @@ abstract class _Sense implements Sense {
   @override
   @HiveField(1)
   List<Example> get examples;
+  @override
+  @HiveField(2)
+  String get definitionVi;
+  @override
+  @HiveField(3)
+  String get shortMeaningVi;
   @override
   @JsonKey(ignore: true)
   _$$SenseImplCopyWith<_$SenseImpl> get copyWith =>

@@ -1,14 +1,15 @@
-import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../constants/custom_colors.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
+import '../../../utils/l10n.dart';
 import '../../blocs/iap/iap_bloc.dart';
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import '../../commons/selection_area_with_search.dart';
+import '../settings/bloc/settings_bloc.dart';
 import 'bloc/vocabulary_bloc.dart';
 import 'widgets/phonetic.dart';
 
@@ -27,6 +28,12 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
+    // Read locale to decide which definition language to show
+    final locale =
+        context.watch<SettingsBloc>().state.settingsSnapshot.locale;
+    final showVietnamese = locale == 'vi';
+
     return SelectionAreaWithSearch(
       child: BasePage(
         title: 'Word Details',
@@ -48,6 +55,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Word ────────────────────────────────────────────────
               Text(
                 widget.word.word,
                 style: textTheme.titleLarge?.copyWith(
@@ -56,6 +64,8 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+
+              // ── Part of Speech ───────────────────────────────────────
               Text(
                 "A. Class: ${widget.word.pos}",
                 style: textTheme.titleMedium?.copyWith(
@@ -64,6 +74,8 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+
+              // ── Phonetic ─────────────────────────────────────────────
               Text(
                 "B. Phonetic",
                 style: textTheme.titleMedium?.copyWith(
@@ -98,11 +110,14 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+
               BannerAdWidget(
                 isPremium: isPremium,
                 paddingVertical: 8,
                 paddingHorizontal: 16,
               ),
+
+              // ── Definition ───────────────────────────────────────────
               Text(
                 "C. Definition",
                 style: textTheme.titleMedium?.copyWith(
@@ -111,29 +126,62 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+
               ...List.generate(widget.word.senses.length, (index) {
                 final sense = widget.word.senses[index];
+
+                final shortMeaning = showVietnamese && sense.shortMeaningVi.isNotEmpty
+                    ? sense.shortMeaningVi
+                    : null;
+                final displayDef =
+                    (showVietnamese && sense.definitionVi.isNotEmpty)
+                        ? sense.definitionVi
+                        : sense.definition;
+
                 return Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${index + 1}. ${sense.definition}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      // Short meaning badge (VI only)
+                      if (shortMeaning != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${index + 1}. $shortMeaning',
+                            style: textTheme.labelMedium?.copyWith(
+                              color: colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        // Full definition
+                        Text(
+                          displayDef,
+                          style: textTheme.bodyMedium,
+                        ),
+                      ] else
+                        Text(
+                          '${index + 1}. $displayDef',
+                          style: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       const SizedBox(height: 8),
                       if (sense.examples.isNotEmpty) ...[
                         Text(L10n.tr(context, 'examples')),
                         const SizedBox(height: 8),
                         ...List.generate(
                           sense.examples.length,
-                          (index) {
-                            final example = sense.examples[index];
+                          (i) {
+                            final example = sense.examples[i];
                             return Text(
-                              '${index + 1}.${example.cf.isNotEmpty ? ' (${example.cf})' : ''} ${example.x}',
+                              '${i + 1}.${example.cf.isNotEmpty ? ' (${example.cf})' : ''} ${example.x}',
                               style: textTheme.bodyMedium,
                             );
                           },
@@ -152,7 +200,9 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
   }
 
   void _onMastered(BuildContext context) {
-    context.read<VocabularyBloc>().add(VocabularyEvent.changeStatus(widget.word, WordStatus.mastered));
+    context
+        .read<VocabularyBloc>()
+        .add(VocabularyEvent.changeStatus(widget.word, WordStatus.mastered));
     Navigator.of(context).pop();
   }
 }

@@ -19,17 +19,23 @@ class SenseAdapter extends TypeAdapter<Sense> {
     return Sense(
       definition: fields[0] as String,
       examples: (fields[1] as List).cast<Example>(),
+      definitionVi: fields[2] as String,
+      shortMeaningVi: fields[3] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Sense obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.definition)
       ..writeByte(1)
-      ..write(obj.examples);
+      ..write(obj.examples)
+      ..writeByte(2)
+      ..write(obj.definitionVi)
+      ..writeByte(3)
+      ..write(obj.shortMeaningVi);
   }
 
   @override
@@ -53,10 +59,14 @@ _$SenseImpl _$$SenseImplFromJson(Map<String, dynamic> json) => _$SenseImpl(
               ?.map((e) => Example.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      definitionVi: json['definition_vi'] as String? ?? "",
+      shortMeaningVi: json['short_meaning_vi'] as String? ?? "",
     );
 
 Map<String, dynamic> _$$SenseImplToJson(_$SenseImpl instance) =>
     <String, dynamic>{
       'definition': instance.definition,
-      'examples': instance.examples.map((e) => e.toJson()).toList(),
+      'examples': instance.examples,
+      'definition_vi': instance.definitionVi,
+      'short_meaning_vi': instance.shortMeaningVi,
     };

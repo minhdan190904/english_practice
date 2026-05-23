@@ -14,6 +14,8 @@ class Sense with _$Sense {
   const factory Sense({
     @HiveField(0) @Default("") String definition,
     @HiveField(1) @Default([]) List<Example> examples,
+    @HiveField(2) @Default("") String definitionVi,
+    @HiveField(3) @Default("") String shortMeaningVi,
   }) = _Sense;
 
   factory Sense.fromJson(Map<String, dynamic> json) => _$SenseFromJson(json);
