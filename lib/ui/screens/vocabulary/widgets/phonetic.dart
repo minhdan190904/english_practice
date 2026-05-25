@@ -23,6 +23,7 @@ class Phonetic extends StatefulWidget {
 
 class _PhoneticState extends State<Phonetic> {
   final _player = DI().sl<AudioPlayer>();
+  static final Map<String, LockCachingAudioSource> _audioCache = {};
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,11 @@ class _PhoneticState extends State<Phonetic> {
 
   void _playSound() async {
     try {
-      await _player.setUrl(widget.phonetic);
+      final url = widget.phonetic;
+      if (!_audioCache.containsKey(url)) {
+        _audioCache[url] = LockCachingAudioSource(Uri.parse(url));
+      }
+      await _player.setAudioSource(_audioCache[url]!);
       await _player.play();
     } catch (e) {
       debugPrint('skip');

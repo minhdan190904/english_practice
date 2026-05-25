@@ -1,12 +1,15 @@
+import 'dart:convert';
 import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:get_it/get_it.dart';
 import '../../../configs/di.dart';
 import '../../../data/models/sample_passage_response.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/sense.dart';
 import '../../../data/models/example.dart';
+import '../../../data/repositories/ai_repository.dart';
 import '../../blocs/iap/iap_bloc.dart';
 import '../review/flash_card_screen.dart';
 import '../settings/bloc/settings_bloc.dart';
@@ -17,6 +20,7 @@ class AiLessonDetailScreen extends StatefulWidget {
   final String passage;
   final String? passageVi;
   final List<SelectedWord> selectedWords;
+  final String? imageBase64;
 
   const AiLessonDetailScreen({
     super.key,
@@ -24,6 +28,7 @@ class AiLessonDetailScreen extends StatefulWidget {
     required this.passage,
     this.passageVi,
     required this.selectedWords,
+    this.imageBase64,
   });
 
   @override
@@ -34,12 +39,61 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
   bool _showFull = false;
   bool _isVi = false;
   final _player = DI().sl<AudioPlayer>();
+  final Map<String, LockCachingAudioSource> _audioCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _preloadAudio();
+  }
+
+  void _preloadAudio() {
+    for (final word in widget.selectedWords) {
+      if (word.phoneticUrl?.isNotEmpty ?? false) {
+        final url = word.phoneticUrl!;
+        if (!_audioCache.containsKey(url)) {
+          _audioCache[url] = LockCachingAudioSource(Uri.parse(url))..request();
+        }
+      }
+      if (word.phoneticAmUrl?.isNotEmpty ?? false) {
+        final url = word.phoneticAmUrl!;
+        if (!_audioCache.containsKey(url)) {
+          _audioCache[url] = LockCachingAudioSource(Uri.parse(url))..request();
+        }
+      }
+    }
+  }
+
+  // ── Report dialog ──────────────────────────────────────────────────────────
+  void _showReportDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ReportSheet(
+        title: widget.title,
+        onSuccess: () {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Báo cáo đã được gửi. Cảm ơn bạn!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
 
   // ── Play audio from URL ────────────────────────────────────────────────
   Future<void> _playAudio(String? url) async {
     if (url == null || url.isEmpty) return;
     try {
-      await _player.setUrl(url);
+      if (!_audioCache.containsKey(url)) {
+        _audioCache[url] = LockCachingAudioSource(Uri.parse(url));
+      }
+      await _player.setAudioSource(_audioCache[url]!);
       await _player.play();
     } catch (e) {
       debugPrint('Audio error: $e');
@@ -222,7 +276,8 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
     }
     final highlightSet = wordMap.keys.toSet();
 
-    final rawWords = widget.passage.split(RegExp(r'(\s+)'));
+    final rawPassage = widget.passage.replaceAll('**', '').replaceAll('*', '');
+    final rawWords = rawPassage.split(RegExp(r'(\s+)'));
     final spans = <InlineSpan>[];
 
     for (final token in rawWords) {
@@ -372,28 +427,8 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       Text('$wordCount words',
                         style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500])),
                       const Spacer(),
-                      if (widget.passageVi != null && widget.passageVi!.isNotEmpty)
-                        GestureDetector(
-                          onTap: () => setState(() => _isVi = !_isVi),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              _isVi ? '🇻🇳 VI' : '🇬🇧 EN',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ),
                       OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () => _showReportDialog(context),
                         icon: const Icon(Icons.flag_outlined, size: 14),
                         label: Text(L10n.tr(context, 'report')),
                         style: OutlinedButton.styleFrom(
@@ -410,7 +445,90 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Tap hint
+            // ── AI-generated illustration ──
+            if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
+              _LessonImage(base64: widget.imageBase64!),
+            if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // Language toggle bar (only show when Vietnamese translation is available)
+            if (widget.passageVi != null && widget.passageVi!.isNotEmpty) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withAlpha(80),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colorScheme.outlineVariant.withAlpha(80)),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isVi = false),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: !_isVi ? colorScheme.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: !_isVi
+                                ? [BoxShadow(color: colorScheme.primary.withAlpha(60), blurRadius: 8, offset: const Offset(0, 2))]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Nguyên bản',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: !_isVi ? Colors.white : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isVi = true),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _isVi ? colorScheme.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: _isVi
+                                ? [BoxShadow(color: colorScheme.primary.withAlpha(60), blurRadius: 8, offset: const Offset(0, 2))]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Dịch',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: _isVi ? Colors.white : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Tap hint (only show in English mode)
             if (!_isVi)
               Row(
                 children: [
@@ -429,7 +547,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
               ),
             if (!_isVi) const SizedBox(height: 8),
 
-            // Passage card with tappable highlights
+            // Passage card with tappable highlights + expand/collapse
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -440,43 +558,69 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AnimatedCrossFade(
-                    firstChild: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _isVi
-                            ? Text(widget.passageVi ?? '',
-                                style: TextStyle(
-                                  height: 1.6,
-                                  fontSize: 16,
-                                  color: Colors.grey.shade800,
-                                ))
-                            : _buildHighlightedPassage(context),
-                        if (isLong && !_showFull) ...[
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => setState(() => _showFull = true),
-                            child: Text(L10n.tr(context, 'show_more'),
-                              style: TextStyle(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              )),
-                          ),
+                  // Clipped passage with gradient fade when collapsed
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeInOut,
+                    constraints: BoxConstraints(
+                      maxHeight: _showFull ? double.maxFinite : 140,
+                    ),
+                    child: ClipRect(
+                      child: Stack(
+                        children: [
+                          _isVi
+                              ? Text(
+                                  (widget.passageVi ?? '').replaceAll('**', '').replaceAll('*', ''),
+                                  style: TextStyle(height: 1.6, fontSize: 16, color: Colors.grey.shade800),
+                                )
+                              : _buildHighlightedPassage(context),
+                          // Gradient fade at bottom when collapsed
+                          if (!_showFull)
+                            Positioned(
+                              left: 0, right: 0, bottom: 0,
+                              height: 48,
+                              child: IgnorePointer(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [Colors.white.withAlpha(0), Colors.white],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Expand / Collapse button
+                  GestureDetector(
+                    onTap: () => setState(() => _showFull = !_showFull),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _showFull
+                              ? (showVi ? 'Thu gọn' : 'Show less')
+                              : (showVi ? 'Xem thêm' : 'Show more'),
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        AnimatedRotation(
+                          turns: _showFull ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 320),
+                          child: Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 18, color: theme.colorScheme.primary),
+                        ),
                       ],
                     ),
-                    secondChild: _isVi
-                        ? Text(widget.passageVi ?? '',
-                            style: TextStyle(
-                              height: 1.6,
-                              fontSize: 16,
-                              color: Colors.grey.shade800,
-                            ))
-                        : _buildHighlightedPassage(context),
-                    crossFadeState: (_showFull || !isLong)
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
                   ),
                 ],
               ),
@@ -544,91 +688,250 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       ? word.definitionVi!
                       : word.definition ?? '';
 
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: GestureDetector(
-                      onTap: () => _playAudio(word.phoneticUrl ?? word.phoneticAmUrl),
-                      child: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withAlpha(80),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.volume_up_rounded,
-                          color: colorScheme.primary, size: 20),
-                      ),
-                    ),
-                    title: Row(
-                      children: [
-                        Text(word.word,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(width: 8),
-                        // Badge ngắn trong vocab list — ưu tiên shortMeaningVi
-                        if (showVi && ((word.shortMeaningVi?.isNotEmpty ?? false) || (word.definitionVi?.isNotEmpty ?? false)))
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              word.shortMeaningVi?.isNotEmpty == true ? word.shortMeaningVi! : word.definitionVi!,
-                              style: TextStyle(
-                                color: colorScheme.onPrimary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (displayDef.isNotEmpty)
-                          Text('${L10n.tr(context, 'meaning_prefix')}$displayDef',
-                            style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                        if (word.phoneticText != null)
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: InkWell(
+                      onTap: () => _showWordMeaning(context, word),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Row 1: Word + short badge + delete ──────────
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Text('${L10n.tr(context, 'pronunciation_prefix')}${word.phoneticText}',
-                                style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 12)),
+                              // Audio icon
+                              GestureDetector(
+                                onTap: () => _playAudio(word.phoneticUrl ?? word.phoneticAmUrl),
+                                child: Container(
+                                  width: 36, height: 36,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer.withAlpha(100),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(Icons.volume_up_rounded,
+                                    color: colorScheme.primary, size: 18),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Word
+                              Text(word.word,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                )),
                               const Spacer(),
-                              if (word.phoneticUrl?.isNotEmpty ?? false)
-                                _SmallAudioBtn(
-                                  label: 'UK',
-                                  color: Colors.green,
-                                  onTap: () => _playAudio(word.phoneticUrl),
-                                ),
-                              if (word.phoneticAmUrl?.isNotEmpty ?? false) ...[
-                                const SizedBox(width: 6),
-                                _SmallAudioBtn(
-                                  label: 'US',
-                                  color: Colors.red,
-                                  onTap: () => _playAudio(word.phoneticAmUrl),
-                                ),
-                              ],
+                              // Delete
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded,
+                                  color: Colors.redAccent, size: 20),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => setState(() => widget.selectedWords.removeAt(i)),
+                              ),
                             ],
                           ),
-                        if (word.example != null)
-                          Text(word.example!,
-                            style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 12)),
-                      ],
+                          const SizedBox(height: 6),
+                          // ── Short meaning badge (below word row) ────────
+                          if (showVi && ((word.shortMeaningVi?.isNotEmpty ?? false) || (word.definitionVi?.isNotEmpty ?? false)))
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer.withAlpha(180),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '🇻🇳 ',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                      word.shortMeaningVi?.isNotEmpty == true
+                                          ? word.shortMeaningVi!
+                                          : word.definitionVi!,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: colorScheme.onPrimaryContainer,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          // ── Row 2: Meaning ──────────────────────────────
+                          if (displayDef.isNotEmpty)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  margin: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    showVi ? 'Nghĩa:' : 'Meaning:',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blueGrey.shade400,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(displayDef,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade800,
+                                      height: 1.4,
+                                    )),
+                                ),
+                              ],
+                            ),
+                          // ── Row 3: Phonetic + audio buttons ────────────
+                          if (word.phoneticText?.isNotEmpty ?? false) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 56,
+                                  child: Text(
+                                    showVi ? 'Phát âm:' : 'IPA:',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blueGrey.shade400,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '/${word.phoneticText}/',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (word.phoneticUrl?.isNotEmpty ?? false)
+                                  _SmallAudioBtn(
+                                    label: 'UK',
+                                    color: Colors.green,
+                                    onTap: () => _playAudio(word.phoneticUrl),
+                                  ),
+                                if (word.phoneticAmUrl?.isNotEmpty ?? false) ...[
+                                  const SizedBox(width: 4),
+                                  _SmallAudioBtn(
+                                    label: 'US',
+                                    color: Colors.red,
+                                    onTap: () => _playAudio(word.phoneticAmUrl),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                          // ── Row 4: Example ─────────────────────────────
+                          if (word.example?.isNotEmpty ?? false) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  margin: const EdgeInsets.only(top: 1),
+                                  child: Text(
+                                    showVi ? 'Ví dụ:' : 'Example:',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blueGrey.shade400,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(word.example!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                      height: 1.4,
+                                    )),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                      onPressed: () {
-                        setState(() {
-                          widget.selectedWords.removeAt(i);
-                        });
-                      },
-                    ),
-                    onTap: () => _showWordMeaning(context, word),
                   );
                 },
               ),
             ),
             const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── AI-generated lesson illustration ──────────────────────────────────────
+class _LessonImage extends StatefulWidget {
+  final String base64;
+  const _LessonImage({required this.base64});
+
+  @override
+  State<_LessonImage> createState() => _LessonImageState();
+}
+
+class _LessonImageState extends State<_LessonImage> {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Short delay then fade in for a polished entrance
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) setState(() => _opacity = 1.0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageBytes = base64Decode(widget.base64);
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: _opacity,
+      curve: Curves.easeOut,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // The image
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.memory(
+                imageBytes,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            // Subtle bottom gradient overlay for polish
+            Positioned(
+              left: 0, right: 0, bottom: 0,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withAlpha(60)],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -693,6 +996,150 @@ class _SmallAudioBtn extends StatelessWidget {
             Icon(Icons.volume_up_rounded, size: 12, color: color),
             const SizedBox(width: 3),
             Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Report Sheet ──────────────────────────────────────────────────────────────
+class _ReportSheet extends StatefulWidget {
+  final String title;
+  final VoidCallback onSuccess;
+
+  const _ReportSheet({required this.title, required this.onSuccess});
+
+  @override
+  State<_ReportSheet> createState() => _ReportSheetState();
+}
+
+class _ReportSheetState extends State<_ReportSheet> {
+  // No GlobalKey, no Form — manual validation only
+  final _reasonController = TextEditingController();
+  String _selectedType = 'passage';
+  String? _errorText;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _errorText = 'Vui lòng mô tả vấn đề');
+      return;
+    }
+    setState(() { _sending = true; _errorText = null; });
+    try {
+      await GetIt.instance<AiRepository>().submitReport(
+        type: _selectedType,
+        content: widget.title,
+        reason: reason,
+      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _sending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi gửi báo cáo: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withAlpha(50),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('🚨 Báo cáo nội dung',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Giúp chúng tôi cải thiện chất lượng nội dung',
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+            const SizedBox(height: 16),
+            Text('Loại báo cáo', style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final t in [
+                  ('passage', '📝 Đoạn văn'),
+                  ('word', '🔤 Từ vựng'),
+                  ('translation', '🇻🇳 Bản dịch'),
+                  ('other', '❔ Khác'),
+                ])
+                  ChoiceChip(
+                    label: Text(t.$2),
+                    selected: _selectedType == t.$1,
+                    onSelected: (_) => setState(() => _selectedType = t.$1),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Mô tả vấn đề', style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reasonController,
+              maxLines: 3,
+              onChanged: (_) { if (_errorText != null) setState(() => _errorText = null); },
+              decoration: InputDecoration(
+                hintText: 'Ví dụ: Bản dịch tiếng Việt không chính xác...',
+                errorText: _errorText,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withAlpha(80),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _sending ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _sending
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Gửi báo cáo',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
           ],
         ),
       ),

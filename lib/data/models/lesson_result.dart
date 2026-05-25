@@ -35,12 +35,14 @@ class LessonResult {
   final String passage;
   final String? passageVi;
   final List<GeneratedVocab> vocabulary;
+  final String? imageBase64;
 
   LessonResult({
     required this.title,
     required this.passage,
     this.passageVi,
     required this.vocabulary,
+    this.imageBase64,
   });
 
   factory LessonResult.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class LessonResult {
       passage: json['passage'] ?? '',
       passageVi: json['passageVi'],
       vocabulary: vocabList,
+      imageBase64: json['imageBase64'],
     );
   }
 }

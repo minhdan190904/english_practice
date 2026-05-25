@@ -6,6 +6,7 @@ class SamplePassageResponse {
   final String category;
   final String level;
   final int wordCount;
+  final String? imageBase64;
 
   SamplePassageResponse({
     required this.title,
@@ -15,6 +16,7 @@ class SamplePassageResponse {
     required this.category,
     required this.level,
     required this.wordCount,
+    this.imageBase64,
   });
 
   factory SamplePassageResponse.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class SamplePassageResponse {
       category: json['category'] ?? '',
       level: json['level'] ?? '',
       wordCount: json['wordCount'] ?? 0,
+      imageBase64: json['imageBase64'],
     );
   }
 }

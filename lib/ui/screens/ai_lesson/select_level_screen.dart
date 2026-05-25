@@ -13,12 +13,12 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
   late String _selected;
 
   final List<_LevelInfo> _levels = [
-    _LevelInfo('A1', 'Beginner', 'Can understand very basic phrases and expressions. Limited vocabulary.', Colors.green),
-    _LevelInfo('A2', 'Elementary', 'Can communicate in simple situations about familiar topics. Basic vocabulary and grammar.', Colors.teal),
-    _LevelInfo('B1', 'Intermediate', 'Can deal with most travel and personal situations. Can describe experiences and events.', Colors.blue),
-    _LevelInfo('B2', 'Upper-Intermediate', 'Can understand main ideas of complex text. Can interact fluently with native speakers.', Colors.indigo),
-    _LevelInfo('C1', 'Advanced', 'Can express ideas fluently and spontaneously. Flexible use of language for social, academic purposes.', Colors.deepPurple),
-    _LevelInfo('C2', 'Proficiency', 'Can understand virtually everything heard or read. Can express themselves spontaneously and precisely.', Colors.purple),
+    _LevelInfo('A1', 'Mới bắt đầu (Beginner)', 'Hiểu các cụm từ và cách diễn đạt rất cơ bản. Vốn từ vựng hạn chế.', Colors.green),
+    _LevelInfo('A2', 'Sơ cấp (Elementary)', 'Giao tiếp được trong các tình huống đơn giản về chủ đề quen thuộc. Từ vựng và ngữ pháp cơ bản.', Colors.teal),
+    _LevelInfo('B1', 'Trung cấp (Intermediate)', 'Xử lý được hầu hết các tình huống khi đi du lịch và đời sống. Có thể miêu tả trải nghiệm và sự kiện.', Colors.blue),
+    _LevelInfo('B2', 'Trung cao cấp (Upper-Intermediate)', 'Hiểu được ý chính của các văn bản phức tạp. Có thể giao tiếp trôi chảy với người bản xứ.', Colors.indigo),
+    _LevelInfo('C1', 'Cao cấp (Advanced)', 'Diễn đạt ý tưởng trôi chảy và tự nhiên. Sử dụng ngôn ngữ linh hoạt cho mục đích xã hội, học thuật.', Colors.deepPurple),
+    _LevelInfo('C2', 'Thành thạo (Proficiency)', 'Hiểu gần như mọi thứ nghe hoặc đọc được. Diễn đạt một cách tự nhiên và chính xác tuyệt đối.', Colors.purple),
   ];
 
   @override

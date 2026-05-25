@@ -63,6 +63,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
               passage: lesson.passage,
               passageVi: lesson.passageVi,
               selectedWords: selectedWords,
+              imageBase64: lesson.imageBase64,
             ),
           ),
         )
@@ -131,7 +132,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context)
+          Navigator.of(context, rootNavigator: true)
               .push(
                 MaterialPageRoute(
                     builder: (_) => const NewAiLessonScreen()),

@@ -1,8 +1,10 @@
 import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/sample_passage_response.dart';
+import '../../../data/models/saved_lesson.dart';
 import '../../../data/repositories/ai_repository.dart';
 import '../../../configs/di.dart';
+import 'ai_lesson_detail_screen.dart';
 
 class SelectTopicScreen extends StatefulWidget {
   final String level;
@@ -16,6 +18,7 @@ class SelectTopicScreen extends StatefulWidget {
 class _SelectTopicScreenState extends State<SelectTopicScreen> {
   String _selectedCategoryId = 'technology';
   bool _isLoading = false;
+  String _loadingMessage = '';
 
   final List<_CategoryInfo> _categories = [
     _CategoryInfo("technology", "Technology", "💻", "Computers, internet, software, gadgets", Colors.blue),
@@ -39,17 +42,86 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
   ];
 
   Future<void> _generateSample() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Đang tạo đoạn văn mẫu...';
+    });
     try {
       final aiRepository = DI().sl<AiRepository>();
-      final result = await aiRepository.generateSamplePassage(
+
+      // Step 1: Generate sample passage from category
+      final sampleResult = await aiRepository.generateSamplePassage(
         category: _selectedCategoryId,
         level: widget.level,
       );
-      if (mounted) {
-        // Return full result so caller can get both passage text and words
-        Navigator.pop(context, result);
-      }
+
+      if (!mounted) return;
+      setState(() => _loadingMessage = 'Đang phân tích từ vựng...');
+
+      // Step 2: Auto-run generate-lesson with the sample passage
+      final lessonResult = await aiRepository.generateLesson(
+        customText: sampleResult.passage,
+        level: widget.level,
+      );
+
+      if (!mounted) return;
+
+      // Step 3: Build SelectedWord list
+      final selectedWords = lessonResult.vocabulary
+          .map((v) => SelectedWord(
+                word: v.word,
+                level: widget.level,
+                category: _selectedCategoryId,
+                definition: v.meaning,
+                definitionVi: v.meaningVi,
+                example: v.example,
+                phoneticText: v.pronunciation,
+                phoneticUrl: v.phoneticUrl,
+                phoneticAmUrl: v.phoneticAmUrl,
+              ))
+          .toList();
+
+      // Step 4: Auto-save lesson
+      final lesson = SavedLesson(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: lessonResult.title,
+        passage: lessonResult.passage,
+        passageVi: lessonResult.passageVi,
+        words: selectedWords
+            .map((w) => SavedWord(
+                  word: w.word,
+                  definition: w.definition,
+                  definitionVi: w.definitionVi,
+                  shortMeaningVi: w.shortMeaningVi,
+                  example: w.example,
+                  phoneticText: w.phoneticText,
+                  phoneticAmText: w.phoneticAmText,
+                  phoneticUrl: w.phoneticUrl,
+                  phoneticAmUrl: w.phoneticAmUrl,
+                  pos: w.pos,
+                  level: w.level,
+                  category: w.category,
+                ))
+            .toList(),
+        createdAt: DateTime.now(),
+        imageBase64: lessonResult.imageBase64,
+      );
+      await SavedLessonsRepository().save(lesson);
+
+      if (!mounted) return;
+
+      // Step 5: Navigate directly to lesson detail — pop select topic screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => AiLessonDetailScreen(
+            title: lessonResult.title,
+            passage: lessonResult.passage,
+            passageVi: lessonResult.passageVi,
+            selectedWords: selectedWords,
+            imageBase64: lessonResult.imageBase64,
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +130,10 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _loadingMessage = '';
+        });
       }
     }
   }
@@ -170,10 +245,18 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                        width: 24, height: 24,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(L10n.tr(context, 'generate_sample'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                          const SizedBox(width: 10),
+                          Text(_loadingMessage.isNotEmpty ? _loadingMessage : '...',
+                              style: const TextStyle(color: Colors.white, fontSize: 14)),
+                        ],
+                      )
+                    : Text(L10n.tr(context, 'generate_sample'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ),

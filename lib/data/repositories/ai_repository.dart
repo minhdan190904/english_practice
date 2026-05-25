@@ -35,6 +35,32 @@ class AiRepository {
     }
   }
 
+  Future<LessonResult> generateLessonFromInput({
+    required String inputText,
+    required String level,
+    List<String> learnedWords = const [],
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/ai/generate-lesson-from-input',
+        data: {
+          'inputText': inputText,
+          'level': level,
+          'learnedWords': learnedWords,
+        },
+      );
+
+      var data = response.data;
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+
+      return LessonResult.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to generate lesson from input: $e');
+    }
+  }
+
   Future<SamplePassageResponse> generateSamplePassage({
     required String category,
     required String level,
@@ -79,5 +105,22 @@ class AiRepository {
     } catch (e) {
       throw Exception('Failed to get category words: $e');
     }
+  }
+
+  Future<void> submitReport({
+    required String type,
+    required String content,
+    required String reason,
+    String? userId,
+  }) async {
+    await _dio.post(
+      '/report',
+      data: {
+        'type': type,
+        'content': content,
+        'reason': reason,
+        'userId': userId,
+      },
+    );
   }
 }

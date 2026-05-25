@@ -8,6 +8,7 @@ class SavedLesson {
   final String? passageVi;
   final List<SavedWord> words;
   final DateTime createdAt;
+  final String? imageBase64;
 
   SavedLesson({
     required this.id,
@@ -16,6 +17,7 @@ class SavedLesson {
     this.passageVi,
     required this.words,
     required this.createdAt,
+    this.imageBase64,
   });
 
   int get wordCount => words.length;
@@ -32,6 +34,7 @@ class SavedLesson {
         'passageVi': passageVi,
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
+        'imageBase64': imageBase64,
       };
 
   factory SavedLesson.fromJson(Map<String, dynamic> json) => SavedLesson(
@@ -43,6 +46,7 @@ class SavedLesson {
             .map((w) => SavedWord.fromJson(w))
             .toList(),
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+        imageBase64: json['imageBase64'],
       );
 }
 

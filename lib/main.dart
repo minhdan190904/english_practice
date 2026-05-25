@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,6 +22,7 @@ import 'navigation/app_router.dart';
 import 'ui/blocs/iap/iap_bloc.dart';
 import 'ui/blocs/translate/translate_cubit.dart';
 import 'ui/blocs/auth/auth_cubit.dart';
+import 'data/repositories/settings_repository.dart';
 import 'ui/screens/settings/bloc/settings_bloc.dart';
 import 'utils/ad/consent_manager.dart';
 import 'utils/global_values.dart';
@@ -111,6 +113,20 @@ void main() async {
   final currentTimeZone = await runStep('FlutterTimezone.getLocalTimezone', () => FlutterTimezone.getLocalTimezone());
   runStep('tz.setLocalLocation', () async {
     tz.setLocalLocation(tz.getLocation(currentTimeZone ?? 'UTC'));
+  });
+
+  // Auto-detect locale from device language on first launch
+  await runStep('AutoDetectLocale', () async {
+    final settingsRepo = DI().sl<SettingsRepository>();
+    final savedSettings = settingsRepo.getSettingsSnapshot();
+    // Only auto-set if user hasn't explicitly set a locale (still at default 'en')
+    // Use device locale to determine default
+    final deviceLocale = Platform.localeName; // e.g. 'vi_VN', 'en_US'
+    final isViDevice = deviceLocale.toLowerCase().startsWith('vi');
+    if (isViDevice && savedSettings.locale == 'en') {
+      await settingsRepo.saveSettingsSnapshot(savedSettings.copyWith(locale: 'vi'));
+      debugPrint('AutoDetectLocale: Device is Vietnamese, setting locale to vi');
+    }
   });
 
   runApp(

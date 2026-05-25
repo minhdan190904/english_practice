@@ -20,8 +20,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
   String _selectedLevelCode = 'B1';
   String _selectedLevelLabel = 'B1 - Intermediate';
   bool _isLoading = false;
-
-  List<SelectedWord> _sampleWords = [];
+  String _loadingMessage = '';
 
   int get _wordCount {
     final t = _textController.text.trim();
@@ -30,20 +29,19 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
   }
 
   Future<void> _openLevelPicker() async {
-    final picked = await Navigator.push<String>(
-      context,
+    final picked = await Navigator.of(context, rootNavigator: true).push<String>(
       MaterialPageRoute(
         builder: (_) => SelectLevelScreen(currentLevel: _selectedLevelCode),
       ),
     );
     if (picked != null && mounted) {
       final labels = {
-        'A1': 'A1 - Beginner',
-        'A2': 'A2 - Elementary',
-        'B1': 'B1 - Intermediate',
-        'B2': 'B2 - Upper-Intermediate',
-        'C1': 'C1 - Advanced',
-        'C2': 'C2 - Proficiency',
+        'A1': 'A1 - Mới bắt đầu',
+        'A2': 'A2 - Sơ cấp',
+        'B1': 'B1 - Trung cấp',
+        'B2': 'B2 - Trung cao cấp',
+        'C1': 'C1 - Cao cấp',
+        'C2': 'C2 - Thành thạo',
       };
       setState(() {
         _selectedLevelCode = picked;
@@ -52,35 +50,57 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
     }
   }
 
-  Future<void> _generateLesson() async {
-    final customText = _textController.text.trim();
-    if (customText.isEmpty) return;
+  /// Get words the user has already learned from past lessons (local storage)
+  Future<List<String>> _getLearnedWords() async {
+    try {
+      final lessons = await SavedLessonsRepository().getAll();
+      return lessons
+          .expand((l) => l.words)
+          .map((w) => w.word.toLowerCase().trim())
+          .toSet()
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
 
-    setState(() => _isLoading = true);
+  Future<void> _generateLesson() async {
+    final inputText = _textController.text.trim();
+    if (inputText.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Đang tạo đoạn văn...';
+    });
 
     try {
       final aiRepository = GetIt.instance<AiRepository>();
 
-      final result = await aiRepository.generateLesson(
-        customText: customText,
+      // Collect learned words to avoid repeating them
+      final learnedWords = await _getLearnedWords();
+
+      setState(() => _loadingMessage = 'Đang phân tích từ vựng...');
+
+      // Single API call: generate passage + detect new vocab
+      final result = await aiRepository.generateLessonFromInput(
+        inputText: inputText,
         level: _selectedLevelCode,
+        learnedWords: learnedWords,
       );
 
-      final wordsForDetail = _sampleWords.isNotEmpty
-          ? _sampleWords
-          : result.vocabulary
-              .map((v) => SelectedWord(
-                    word: v.word,
-                    level: _selectedLevelCode,
-                    category: '',
-                    definition: v.meaning,
-                    definitionVi: v.meaningVi,
-                    example: v.example,
-                    phoneticText: v.pronunciation,
-                    phoneticUrl: v.phoneticUrl,
-                    phoneticAmUrl: v.phoneticAmUrl,
-                  ))
-              .toList();
+      final wordsForDetail = result.vocabulary
+          .map((v) => SelectedWord(
+                word: v.word,
+                level: _selectedLevelCode,
+                category: '',
+                definition: v.meaning,
+                definitionVi: v.meaningVi,
+                example: v.example,
+                phoneticText: v.pronunciation,
+                phoneticUrl: v.phoneticUrl,
+                phoneticAmUrl: v.phoneticAmUrl,
+              ))
+          .toList();
 
       // Auto-save lesson to local storage
       final lesson = SavedLesson(
@@ -105,6 +125,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                 ))
             .toList(),
         createdAt: DateTime.now(),
+        imageBase64: result.imageBase64,
       );
       await SavedLessonsRepository().save(lesson);
 
@@ -116,6 +137,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
               passage: result.passage,
               passageVi: result.passageVi,
               selectedWords: wordsForDetail,
+              imageBase64: result.imageBase64,
             ),
           ),
         );
@@ -127,7 +149,10 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isLoading = false;
+        _loadingMessage = '';
+      });
     }
   }
 
@@ -215,19 +240,15 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push<SamplePassageResponse>(
+                  onPressed: () {
+                    // SelectTopicScreen now handles the full flow:
+                    // sample-passage → generate-lesson → navigate to AiLessonDetailScreen
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => SelectTopicScreen(level: _selectedLevelCode),
                       ),
                     );
-                    if (result != null && result.passage.trim().isNotEmpty && mounted) {
-                      setState(() {
-                        _textController.text = result.passage;
-                        _sampleWords = result.selectedWords;
-                      });
-                    }
                   },
                   icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                   label: Text(L10n.tr(context, 'sample')),
@@ -246,9 +267,9 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
             TextField(
               controller: _textController,
               maxLines: 8,
-              onChanged: (_) => setState(() => _sampleWords = []),
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: "Enter or paste English text to learn vocabulary.\nExample: Why can't dogs eat chocolate?",
+                hintText: "Nhập chủ đề, từ khóa hoặc đoạn văn để học...\nVD: tại sao chó không ăn được sôcôla? / \"Dogs can't eat chocolate because...\"",
                 hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                 enabledBorder: OutlineInputBorder(
@@ -294,9 +315,19 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: Center(
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 24, width: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                  height: 20, width: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                              const SizedBox(width: 10),
+                              Text(
+                                _loadingMessage.isNotEmpty ? _loadingMessage : '...',
+                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                              ),
+                            ],
+                          )
                         : Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
