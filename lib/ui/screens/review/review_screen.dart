@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:english_practice/utils/extensions/date_time_extensions.dart';
 
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
-import '../../../generated/assets.dart';
+
 import '../../../navigation/app_router.dart';
 import '../../../utils/global_values.dart';
-import '../../blocs/iap/iap_bloc.dart';
 import '../../commons/ads/banner_ad_widget.dart';
-import '../../commons/ads/rewarded_ad_mixin.dart';
 import '../../commons/base_page.dart';
-import '../../commons/dialogs/paywall_dialog.dart';
 import '../../commons/rounded_button.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
 import '../vocabulary/widgets/vocabulary_item.dart';
@@ -28,8 +23,8 @@ class ReviewScreen extends StatefulWidget {
   State<ReviewScreen> createState() => _ReviewScreenState();
 }
 
-class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
-  bool _hasReviewed = GlobalValues.lastReviewTime == null ? false : GlobalValues.lastReviewTime!.isSameDay(DateTime.now());
+class _ReviewScreenState extends State<ReviewScreen> {
+
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +32,6 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
     final reviewWords = vocabularyState.words.where((word) => word.status == WordStatus.star).toList();
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
     return BasePage(
       title: L10n.tr(context, 'review'),
       actions: [
@@ -69,10 +63,9 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
                             showReviewButton: false,
                           ),
                           if (index == 1) ...[
-                            BannerAdWidget(
+                            const BannerAdWidget(
                               paddingHorizontal: 16,
                               paddingVertical: 8,
-                              isPremium: isPremium,
                             ),
                           ]
                         ],
@@ -81,27 +74,45 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
                   ),
                 ),
                 const SizedBox(height: 8),
-                RoundedButton(
-                  onPressed: () => _startFlashcards(context, reviewWords),
-                  borderRadius: 16,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_hasReviewed && !isPremium) ...[
-                        SvgPicture.asset(
-                          Assets.svgTimerPlay,
-                          colorFilter: ColorFilter.mode(colorScheme.onPrimary, BlendMode.srcIn),
-                          width: 20,
-                          height: 20,
+                Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: RoundedButton(
+                        onPressed: () => _startFlashcards(context, reviewWords),
+                        borderRadius: 16,
+                        child: Text(
+                          '📝',
+                          style: textTheme.titleSmall?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      Text(
-                        L10n.tr(context, 'start_flashcards'),
-                        style: textTheme.titleSmall?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: RoundedButton(
+                        onPressed: () => _startTyping(context, reviewWords),
+                        borderRadius: 16,
+                        backgroundColor: colorScheme.secondary,
+                        child: Text(
+                          '⌨️',
+                          style: textTheme.titleSmall?.copyWith(color: colorScheme.onSecondary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: RoundedButton(
+                        onPressed: () => _startQuiz(context, reviewWords),
+                        borderRadius: 16,
+                        backgroundColor: colorScheme.tertiary,
+                        child: Text(
+                          '🧠',
+                          style: textTheme.titleSmall?.copyWith(color: colorScheme.onTertiary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                 ),
                 const SizedBox(height: 16),
               ],
@@ -123,19 +134,17 @@ class _ReviewScreenState extends State<ReviewScreen> with RewardedAdMixin {
   }
 
   void _startFlashcards(BuildContext context, List<Word> reviewWords) {
-    if (_hasReviewed && !isPremium) {
-      showRewardedAd((_, __) {
-        context.push(RoutePaths.flashcards, extra: {'words': reviewWords});
-      });
-    } else {
-      context.push(RoutePaths.flashcards, extra: {'words': reviewWords});
-    }
-    setState(() {
-      _hasReviewed = true;
-    });
+    context.push(RoutePaths.flashcards, extra: {'words': reviewWords});
     GlobalValues.setLastReviewTime(DateTime.now());
   }
 
-  @override
-  bool get isPremium => context.read<IapBloc>().state.boughtNoAdsTime != null;
+  void _startTyping(BuildContext context, List<Word> reviewWords) {
+    context.push(RoutePaths.typingChallenge, extra: {'words': reviewWords});
+    GlobalValues.setLastReviewTime(DateTime.now());
+  }
+
+  void _startQuiz(BuildContext context, List<Word> reviewWords) {
+    context.push(RoutePaths.quiz, extra: {'studyWords': reviewWords});
+    GlobalValues.setLastReviewTime(DateTime.now());
+  }
 }

@@ -8,7 +8,7 @@ import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
 import '../../../generated/assets.dart';
 import '../../../navigation/app_router.dart';
-import '../../blocs/iap/iap_bloc.dart';
+
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import '../../commons/rounded_button.dart';
@@ -17,6 +17,9 @@ import '../notifications/bloc/notifications_bloc.dart';
 import 'bloc/vocabulary_bloc.dart';
 import 'widgets/search_box.dart';
 import 'widgets/vocabulary_item.dart';
+import 'widgets/srs_review_banner.dart';
+import '../../../configs/di.dart';
+import '../../../data/repositories/srs_repository.dart';
 import '../../../utils/l10n.dart';
 import '../../../utils/global_values.dart';
 
@@ -39,7 +42,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
     return BlocConsumer<VocabularyBloc, VocabularyState>(
       listener: (context, state) { _showWordDetails(); },
       builder: (context, state) {
@@ -69,6 +72,11 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                   mastered: masteredCount,
                 ),
                 const SizedBox(height: 8),
+                // SRS Review Banner — shows when words are due
+                SrsReviewBanner(
+                  srsRepository: DI().sl<SrsRepository>(),
+                  onReviewNow: () => context.push(RoutePaths.review),
+                ),
                 // Nút Start Review: chỉ hiện khi có từ starred, navigate thẳng đến /flashcards
                 if (starredWords.isNotEmpty) ...[
                   _buildStartReviewButton(context, starredWords),
@@ -109,7 +117,6 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                             BannerAdWidget(
                               paddingHorizontal: 16,
                               paddingVertical: 8,
-                              isPremium: isPremium,
                             ),
                           ]
                         ],

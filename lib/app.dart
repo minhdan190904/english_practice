@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:english_practice/ui/blocs/iap/iap_bloc.dart';
+
 
 import 'navigation/app_router.dart';
 import 'ui/screens/settings/bloc/settings_bloc.dart';
@@ -54,6 +54,14 @@ class _AppState extends State<App> {
               surface: Colors.white,
             ),
             textTheme: TextTheme().apply(fontFamily: fontFamily),
+          ).copyWith(
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark, // dark icons on light background
+                statusBarBrightness: Brightness.light,    // iOS
+              ),
+            ),
           ),
           darkTheme: ThemeData.from(
             colorScheme: ColorScheme.fromSeed(
@@ -62,6 +70,14 @@ class _AppState extends State<App> {
               surface: Color(0xFF1E1E1E),
             ),
             textTheme: TextTheme().apply(fontFamily: fontFamily),
+          ).copyWith(
+            appBarTheme: const AppBarTheme(
+              systemOverlayStyle: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light, // light icons on dark background
+                statusBarBrightness: Brightness.dark,      // iOS
+              ),
+            ),
           ),
           themeMode: ThemeMode.values[snapshot.themeMode],
         );
@@ -74,6 +90,6 @@ class _AppState extends State<App> {
     super.initState();
     context.read<SettingsBloc>().add(const SettingsEvent.getSettings());
     AppLifecycleReactor.listenToShowAds();
-    context.read<IapBloc>().add(const IapEvent.listenForPurchases());
+
   }
 }

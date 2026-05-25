@@ -10,9 +10,12 @@ import '../../../utils/ad/consent_manager.dart';
 class BannerAdWidget extends StatefulWidget {
   final double paddingHorizontal;
   final double paddingVertical;
-  final bool isPremium;
 
-  const BannerAdWidget({super.key, this.paddingHorizontal = 0, required this.isPremium, this.paddingVertical = 0});
+  const BannerAdWidget({
+    super.key,
+    this.paddingHorizontal = 0,
+    this.paddingVertical = 0,
+  });
 
   @override
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
@@ -31,9 +34,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> with AutomaticKeepAlive
   @override
   void initState() {
     super.initState();
-    if (!widget.isPremium) {
-      _initializeAds();
-    }
+    _initializeAds();
   }
 
   void _initializeAds() {
@@ -80,7 +81,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (_bannerAd == null || !_isLoaded || widget.isPremium) return const SizedBox.shrink();
+    if (_bannerAd == null || !_isLoaded) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: widget.paddingVertical),

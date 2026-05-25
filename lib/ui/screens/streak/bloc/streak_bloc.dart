@@ -39,9 +39,6 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
     final timeStreak = _streakRepository.getTimeStreak();
     final longestStreak = _streakRepository.longestStreak;
     final streak = _streakRepository.streak;
-    debugPrint('StreakBloc: timeStreak: $timeStreak');
-    debugPrint('StreakBloc: longestStreak: $longestStreak');
-    debugPrint('StreakBloc: streak: $streak');
     emit(StreakState(
       spentTimeToday: timeStreak,
       longestStreak: longestStreak,
@@ -54,13 +51,15 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
         return;
       }
       final newSpentTimeToday = _streakRepository.getTimeStreak() + 1;
-      add(StreakEvent.emitState(state.copyWith(
-        spentTimeToday: newSpentTimeToday,
-      )));
+      // Only emit if the value actually changed to avoid unnecessary UI rebuilds
+      if (newSpentTimeToday != state.spentTimeToday) {
+        add(StreakEvent.emitState(state.copyWith(
+          spentTimeToday: newSpentTimeToday,
+        )));
+      }
       if (!_streakRepository.streakedToday) {
         _streakRepository.setTimeStreak(newSpentTimeToday);
       }
-      debugPrint('StreakBloc: newSpentTimeToday: $newSpentTimeToday');
       if (newSpentTimeToday >= timePerDayNeeded && !_streakRepository.streakedToday) {
         final newStreak = _streakRepository.streak + 1;
         final newLongestStreak = newStreak > longestStreak ? newStreak : longestStreak;
@@ -69,6 +68,9 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
           longestStreak: newLongestStreak,
         )));
         _streakRepository.setStreak(newStreak);
+        
+        // Sync streak to server
+        _streakRepository.checkInWithServer();
         
         // Log to backend
         _progressRepository.logSession(
@@ -82,5 +84,12 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
 
   _onEmitState(EmitState event, Emitter<StreakState> emit) {
     emit(event.state);
+  }
+
+  @override
+  Future<void> close() {
+    _streakTimer?.cancel();
+    _streakTimer = null;
+    return super.close();
   }
 }

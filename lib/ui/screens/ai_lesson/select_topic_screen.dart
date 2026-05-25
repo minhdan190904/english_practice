@@ -44,7 +44,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
   Future<void> _generateSample() async {
     setState(() {
       _isLoading = true;
-      _loadingMessage = 'Đang tạo đoạn văn mẫu...';
+      _loadingMessage = L10n.tr(context, 'generating_sample_passage');
     });
     try {
       final aiRepository = DI().sl<AiRepository>();
@@ -56,7 +56,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
       );
 
       if (!mounted) return;
-      setState(() => _loadingMessage = 'Đang phân tích từ vựng...');
+      setState(() => _loadingMessage = L10n.tr(context, 'analyzing_vocabulary'));
 
       // Step 2: Auto-run generate-lesson with the sample passage
       final lessonResult = await aiRepository.generateLesson(
@@ -155,12 +155,12 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Choose a topic for AI to generate a sample passage',
+                  L10n.tr(context, 'choose_topic_title'),
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'AI will create an English passage based on your selected topic',
+                  L10n.tr(context, 'choose_topic_desc'),
                   style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
               ],
@@ -208,7 +208,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                cat.title,
+                                L10n.tr(context, 'topic_${cat.id}_title'),
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: isSelected ? cardColor : null,
@@ -216,7 +216,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                cat.description,
+                                L10n.tr(context, 'topic_${cat.id}_desc'),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                     color: isSelected ? cardColor.withAlpha(200) : Colors.grey[600]),
                               ),

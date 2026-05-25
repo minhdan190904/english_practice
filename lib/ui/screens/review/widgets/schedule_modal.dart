@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../constants/date_formats.dart';
 import '../../../../data/models/word.dart';
 import '../../../../utils/app_snack_bar.dart';
-import '../../../blocs/iap/iap_bloc.dart';
 import '../../../commons/ads/banner_ad_widget.dart';
 import '../../../commons/dialogs/request_notifications_permission_dialog.dart';
 import '../../../commons/rounded_button.dart';
@@ -31,7 +30,6 @@ class _ScheduleModalState extends State<ScheduleModal> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -59,7 +57,7 @@ class _ScheduleModalState extends State<ScheduleModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Start first reminder at",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -84,7 +82,7 @@ class _ScheduleModalState extends State<ScheduleModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "Period (minutes)",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -107,10 +105,7 @@ class _ScheduleModalState extends State<ScheduleModal> {
               ),
             ],
           ),
-          BannerAdWidget(
-            paddingVertical: 16,
-            isPremium: isPremium,
-          ),
+          const BannerAdWidget(paddingVertical: 16),
           const SizedBox(height: 8),
           RoundedButton(
             onPressed: () => _scheduleNotifications(widget.reviewWords),

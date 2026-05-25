@@ -5,7 +5,7 @@ import 'package:english_practice/utils/app_snack_bar.dart';
 import '../../../../generated/assets.dart';
 import '../../../data/models/category_data.dart';
 import '../../../data/models/lesson.dart';
-import '../../blocs/iap/iap_bloc.dart';
+
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import 'bloc/lesson_bloc.dart';
@@ -36,7 +36,7 @@ class _GrammarScreenState extends State<GrammarScreen> {
                 element.description.toLowerCase().contains(query.toLowerCase());
           }).toList()
         : sourceCategories;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
     return BlocConsumer<LessonBloc, LessonState>(
       listener: (context, state) {
         if (state.message != null) {
@@ -68,7 +68,6 @@ class _GrammarScreenState extends State<GrammarScreen> {
                   ),
                   if (index == 1)
                     BannerAdWidget(
-                      isPremium: isPremium,
                       paddingVertical: 16,
                       paddingHorizontal: 16,
                     ),

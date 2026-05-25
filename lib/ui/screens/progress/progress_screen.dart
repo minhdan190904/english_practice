@@ -6,10 +6,13 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 import '../../../data/models/word_status.dart';
 import '../../../generated/assets.dart';
 import '../../../utils/l10n.dart';
+import '../../../configs/di.dart';
+import '../../../data/repositories/achievement_repository.dart';
 import '../../commons/base_page.dart';
 import '../grammar/bloc/lesson_bloc.dart';
 import '../streak/bloc/streak_bloc.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
+import 'widgets/achievement_grid.dart';
 
 /// Màn hình Progress — Learning Progress Dashboard (Phase 3).
 class ProgressScreen extends StatelessWidget {
@@ -60,6 +63,10 @@ class ProgressScreen extends StatelessWidget {
               _buildSectionTitle(context, L10n.tr(context, 'grammar_progress'), Icons.school_rounded, colorScheme.tertiary),
               const SizedBox(height: 16),
               _buildGrammarStats(context, completedLessons, totalLessons, grammarPercent, colorScheme, textTheme),
+              const SizedBox(height: 32),
+
+              // Achievement section
+              AchievementGrid(repository: DI().sl<AchievementRepository>()),
               const SizedBox(height: 32),
             ],
           ),

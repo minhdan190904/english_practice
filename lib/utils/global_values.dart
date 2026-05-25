@@ -9,6 +9,8 @@ class GlobalValues {
   static const boughtNoAdsTimeKey = 'boughtNoAds';
   static const lastReviewTimeKey = 'lastPolishTime';
   static const isShowFreeTrialKey = 'isShowFreeTrial';
+  static const lastStudyTimeKey = 'lastStudyTime';
+  static const streakSaverNotifSentKey = 'streak_saver_sent_date';
 
   static SharedPreferences? _sharedPreferences;
 
@@ -61,4 +63,20 @@ class GlobalValues {
   }
 
   static List<String> startupLogs = [];
+
+  // ── Smart Notification tracking ───────────────────────────────────────
+  static DateTime? get lastStudyTime {
+    final ms = _sharedPreferences?.getInt(lastStudyTimeKey);
+    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  }
+
+  static set lastStudyTime(DateTime value) {
+    _sharedPreferences?.setInt(lastStudyTimeKey, value.millisecondsSinceEpoch);
+  }
+
+  static String get streakSaverSentDate =>
+      _sharedPreferences?.getString(streakSaverNotifSentKey) ?? '';
+
+  static set streakSaverSentDate(String value) =>
+      _sharedPreferences?.setString(streakSaverNotifSentKey, value);
 }

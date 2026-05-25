@@ -1,6 +1,8 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 
+import '../../data/data_sources/token_storage.dart';
+import '../app_secrets.dart';
 import 'connectivity_interceptor.dart';
 import 'logging_interceptor.dart';
 import 'auth_interceptor.dart';
@@ -53,19 +55,43 @@ class BackendDio extends AppDio {
   final int _connectTimeout = 60000;
   final int _receiveTimeout = 60000;
   final Connectivity _connectivity;
+  final TokenStorage _tokenStorage;
+
+  static const String _baseUrl = "https://rash-boasting-neon.ngrok-free.dev/api/v1";
+  static const String _apiKey = AppSecrets.apiClientKey;
 
   BackendDio({
     required Connectivity connectivity,
-  }) : _connectivity = connectivity;
+    required TokenStorage tokenStorage,
+  }) : _connectivity = connectivity,
+       _tokenStorage = tokenStorage;
 
   @override
   Dio _get() {
-    return Dio()
+    // Separate Dio for refresh calls (no auth interceptor to avoid loops)
+    final refreshDio = Dio()
       ..options = BaseOptions(
-        baseUrl: "https://rash-boasting-neon.ngrok-free.dev/api/v1",
+        baseUrl: _baseUrl,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': _apiKey,
+        },
+        connectTimeout: Duration(milliseconds: _connectTimeout),
+        receiveTimeout: Duration(milliseconds: _receiveTimeout),
+      )
+      ..interceptors.addAll([
+        LoggingInterceptor(),
+      ]);
+
+    return Dio()
+      ..options = BaseOptions(
+        baseUrl: _baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-API-KEY': _apiKey,
         },
         connectTimeout: Duration(milliseconds: _connectTimeout),
         receiveTimeout: Duration(milliseconds: _receiveTimeout),
@@ -75,7 +101,10 @@ class BackendDio extends AppDio {
         ConnectivityInterceptor(
           connectivity: _connectivity,
         ),
-        AuthInterceptor(),
+        AuthInterceptor(
+          tokenStorage: _tokenStorage,
+          refreshDio: refreshDio,
+        ),
       ]);
   }
 }

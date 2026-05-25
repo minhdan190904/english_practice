@@ -7,7 +7,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../generated/assets.dart';
 import '../../../utils/global_values.dart';
-import '../../blocs/iap/iap_bloc.dart';
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import 'bloc/streak_bloc.dart';
@@ -27,7 +26,6 @@ class _StreakScreenState extends State<StreakScreen> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
     return BlocBuilder<StreakBloc, StreakState>(
       builder: (context, state) {
         final percent = state.spentTimeToday / StreakBloc.timePerDayNeeded;
@@ -65,14 +63,14 @@ class _StreakScreenState extends State<StreakScreen> {
                         circularStrokeCap: CircularStrokeCap.round,
                         percent: percent > 1 ? 1 : percent,
                         center: Image.asset(state.streak != 0 ? Assets.pngFlame : Assets.pngFlameInactive),
-                        progressColor: Color(0xFFf5a623),
+                        progressColor: const Color(0xFFf5a623),
                       ),
                     ),
                     const SizedBox(height: 16.0),
                     Text(
                       state.streak.toString(),
                       style: textTheme.headlineLarge?.copyWith(
-                        color: state.streak != 0 ? Color(0xFFf5a623) : colorScheme.secondary,
+                        color: state.streak != 0 ? const Color(0xFFf5a623) : colorScheme.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -119,10 +117,6 @@ Start your journey to fluent English today! 🔥📖
                             _isShared = true;
                           });
                           GlobalValues.isShowFreeTrial = true;
-                          final secondaryId = const String.fromEnvironment("SECONDARY_PRODUCT_ID");
-                          if (context.mounted) {
-                            context.read<IapBloc>().add(IapEvent.purchaseProduct(secondaryId, isFree: true));
-                          }
                         }
                       } : null,
                       child: Text(L10n.tr(context, 'share_streak_for_trial')),
@@ -131,9 +125,7 @@ Start your journey to fluent English today! 🔥📖
                 ),
               ),
             ),
-            BannerAdWidget(
-              isPremium: isPremium,
-            )
+            const BannerAdWidget(),
           ],
         );
       },

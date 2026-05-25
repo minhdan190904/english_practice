@@ -8,6 +8,7 @@ import '../../../../core/failure.dart';
 import '../../../../data/models/scheduled_notification.dart';
 import '../../../../data/models/word.dart';
 import '../../../../data/repositories/notifications_repository.dart';
+import '../../../../utils/global_values.dart';
 import '../../../../utils/local_notifications_tools.dart';
 
 part 'notifications_event.dart';
@@ -55,28 +56,28 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   _scheduleNextDayReminder(_ScheduleNextDayReminder event, Emitter<NotificationsState> emit) async {
     debugPrint('NotificationsBloc: scheduleNextDayReminder');
     final isGranted = state.isNotificationsGranted;
-    debugPrint('NotificationsBloc: scheduleNextDayReminder isGranted: $isGranted');
     if (isGranted) {
       final now = DateTime.now();
-      const nextDayReminderId = 0;
-      final scheduledDate = DateTime(now.year, now.month, now.day, 8, 0).add(const Duration(days: 1));
-      final title = '💪Boost your vocabulary daily!';
-      final body = 'Don\'t miss the chance to learn new words today. Small steps lead to big changes!';
-      await _localNotificationsTools.scheduleNotification(
-        id: nextDayReminderId,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate,
-        category: NotificationCategory.dailyReminder,
-        threadIdentifier: ThreadIdentifiers.dailyReminder,
-      );
-      await _notificationsRepository.saveScheduledNotification(ScheduledNotification(
-        id: nextDayReminderId,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate.toIso8601String(),
-      ));
-      debugPrint('NotificationsBloc: scheduleNextDayReminder scheduledDate: $scheduledDate');
+
+      // Streak saver (8:00 PM today) — only if not studied yet today
+      final lastStudy = GlobalValues.lastStudyTime;
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final hasStudiedToday = lastStudy != null && lastStudy.isAfter(todayStart);
+      final eveningTime = DateTime(now.year, now.month, now.day, 20, 0);
+      if (!hasStudiedToday && now.isBefore(eveningTime)) {
+        const streakTitle = '⚡ Đừng để streak bị gián đoạn!';
+        const streakBody = 'Bạn chưa học hôm nay. Chỉ 5 phút thôi, giữ chuỗi học tập của bạn nhé!';
+        await _localNotificationsTools.scheduleNotification(
+          id: 9999,
+          title: streakTitle,
+          body: streakBody,
+          scheduledDate: eveningTime,
+          category: NotificationCategory.dailyReminder,
+          threadIdentifier: ThreadIdentifiers.dailyReminder,
+        );
+        debugPrint('NotificationsBloc: Streak saver scheduled for $eveningTime');
+      }
+      debugPrint('NotificationsBloc: scheduleNextDayReminder done');
     }
   }
 

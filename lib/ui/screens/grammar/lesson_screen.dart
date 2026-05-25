@@ -5,9 +5,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../../data/models/lesson.dart';
-import '../../blocs/iap/iap_bloc.dart';
+
 import '../../commons/ads/banner_ad_widget.dart';
-import '../../commons/ads/interstitial_ad_mixin.dart';
 import '../../commons/base_page.dart';
 import '../../commons/dialogs/translation_dialog.dart';
 import '../../commons/selection_area_with_search.dart';
@@ -23,7 +22,7 @@ class LessonScreen extends StatefulWidget {
   State<LessonScreen> createState() => _LessonScreenState();
 }
 
-class _LessonScreenState extends State<LessonScreen> with InterstitialAdMixin {
+class _LessonScreenState extends State<LessonScreen> {
   String? data;
   late ScrollController _scrollController;
 
@@ -41,7 +40,7 @@ class _LessonScreenState extends State<LessonScreen> with InterstitialAdMixin {
   @override
   Widget build(BuildContext context) {
     final title = widget.lesson.title;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
     final colorScheme = Theme.of(context).colorScheme;
     final globalLocale = context.watch<SettingsBloc>().state.settingsSnapshot.locale;
 
@@ -54,11 +53,7 @@ class _LessonScreenState extends State<LessonScreen> with InterstitialAdMixin {
     return BlocBuilder<LessonBloc, LessonState>(
       builder: (context, state) {
         return PopScope(
-          onPopInvokedWithResult: (canPop, result) {
-            if (_scrollController.offset >= _scrollController.position.maxScrollExtent - 100) {
-              showInterstitialAd();
-            }
-          },
+          onPopInvokedWithResult: (canPop, result) {},
           child: Column(
             children: [
               Expanded(
@@ -100,7 +95,7 @@ class _LessonScreenState extends State<LessonScreen> with InterstitialAdMixin {
                         ),
                 ),
               ),
-              BannerAdWidget(isPremium: isPremium),
+              const BannerAdWidget(),
             ],
           ),
         );
@@ -166,6 +161,4 @@ class _LessonScreenState extends State<LessonScreen> with InterstitialAdMixin {
     context.read<LessonBloc>().add(LessonEvent.markLesson(id: widget.lesson.id, isMarked: value));
   }
 
-  @override
-  bool get isPremium => context.read<IapBloc>().state.boughtNoAdsTime != null;
 }

@@ -17,6 +17,8 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'app.dart';
 import 'configs/di.dart';
+import 'data/repositories/auth_repository.dart';
+import 'data/models/saved_lesson.dart';
 import 'data/repositories/oxford_words_repository.dart';
 import 'navigation/app_router.dart';
 import 'ui/blocs/iap/iap_bloc.dart';
@@ -88,6 +90,18 @@ void main() async {
     } else {
       debugPrint('Already signed in: ${firebaseAuth.currentUser?.uid} (anonymous: ${firebaseAuth.currentUser?.isAnonymous})');
     }
+  });
+
+  // Register with backend to get JWT tokens (always run after Firebase auth)
+  await runStep('RegisterWithBackend', () async {
+    final authRepo = DI().sl<AuthRepository>();
+    await authRepo.registerWithBackend();
+  });
+
+  // Sync data with server (background, non-blocking)
+  runStep('SyncData', () async {
+    final savedLessonsRepo = SavedLessonsRepository();
+    await savedLessonsRepo.syncWithServer();
   });
 
   if (appFlavor != 'production' || kDebugMode) {

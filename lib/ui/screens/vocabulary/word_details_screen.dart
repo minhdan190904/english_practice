@@ -5,7 +5,7 @@ import '../../../constants/custom_colors.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
 import '../../../utils/l10n.dart';
-import '../../blocs/iap/iap_bloc.dart';
+
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import '../../commons/selection_area_with_search.dart';
@@ -27,7 +27,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
 
     // Read locale to decide which definition language to show
     final locale =
@@ -112,7 +112,6 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
               const SizedBox(height: 8),
 
               BannerAdWidget(
-                isPremium: isPremium,
                 paddingVertical: 8,
                 paddingHorizontal: 16,
               ),

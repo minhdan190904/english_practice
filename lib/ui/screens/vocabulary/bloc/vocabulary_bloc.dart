@@ -6,6 +6,8 @@ import '../../../../data/models/word.dart';
 import '../../../../data/models/word_status.dart';
 import '../../../../data/repositories/oxford_words_repository.dart';
 import '../../../../data/repositories/progress_repository.dart';
+import '../../../../data/repositories/srs_repository.dart';
+import '../../../../utils/achievement_checker.dart';
 
 part 'vocabulary_event.dart';
 
@@ -16,12 +18,18 @@ part 'generated/vocabulary_bloc.freezed.dart';
 class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
   final OxfordWordsRepository _oxfordWordsRepository;
   final ProgressRepository _progressRepository;
+  final SrsRepository _srsRepository;
+  final AchievementChecker _achievementChecker;
 
   VocabularyBloc({
     required OxfordWordsRepository oxfordWordsRepository,
     required ProgressRepository progressRepository,
+    required SrsRepository srsRepository,
+    required AchievementChecker achievementChecker,
   })  : _oxfordWordsRepository = oxfordWordsRepository,
         _progressRepository = progressRepository,
+        _srsRepository = srsRepository,
+        _achievementChecker = achievementChecker,
         super(const VocabularyState()) {
     on<VocabularyEvent>((event, emit) async {
       await event.map(
@@ -40,6 +48,14 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
       return;
     }
     final words = _oxfordWordsRepository.getAllOxfordWords();
+    
+    // Auto-migrate existing starred words into SRS if they aren't already there
+    for (final word in words) {
+      if (word.status == WordStatus.star) {
+        _srsRepository.scheduleWord(word.index);
+      }
+    }
+    
     debugPrint('VocabularyBloc: getAllOxfordWords - success - words ${words.length}');
     emit(state.copyWith(words: words));
   }
@@ -54,7 +70,18 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
       return word;
     }).toList();
     _oxfordWordsRepository.saveWord(newWord);
+    
+    // SRS Syncing
+    if (event.status == WordStatus.star) {
+      _srsRepository.scheduleWord(event.word.index);
+    } else if (event.status == WordStatus.unknown || event.status == WordStatus.mastered) {
+      _srsRepository.removeWord(event.word.index);
+    }
+
     emit(state.copyWith(words: words));
+    
+    // Achievement checks
+    _achievementChecker.checkVocabAchievements(words);
     
     if (event.status == WordStatus.mastered && event.word.status != WordStatus.mastered) {
       _progressRepository.logSession(

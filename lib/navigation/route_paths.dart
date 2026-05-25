@@ -15,4 +15,6 @@ class RoutePaths {
   static const String lesson = '/lesson';
   static const String aiLesson = '/ai_lesson';
   static const String progress = '/progress';
+  static const String quiz = '/quiz';
+  static const String typingChallenge = '/typing_challenge';
 }

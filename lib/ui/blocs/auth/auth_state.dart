@@ -11,6 +11,10 @@ class AuthState {
     this.errorMessage,
   });
 
+  bool get isLoggedIn => user != null;
+  bool get isAnonymous => user?.isAnonymous ?? true;
+  bool get hasGoogleLinked => user != null && !user!.isAnonymous;
+
   AuthState copyWith({
     User? user,
     bool? isLoading,
@@ -19,7 +23,7 @@ class AuthState {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage,
     );
   }
 }

@@ -1,5 +1,6 @@
-import '../../../../utils/l10n.dart';
+import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SelectLevelScreen extends StatefulWidget {
   final String currentLevel;
@@ -32,6 +33,10 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        ),
         title: Text(L10n.tr(context, 'select_your_level'), style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
@@ -60,7 +65,10 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
                 final isSelected = _selected == lvl.code;
                 final cardColor = lvl.color;
                 return InkWell(
-                  onTap: () => setState(() => _selected = lvl.code),
+                  onTap: () {
+                    setState(() => _selected = lvl.code);
+                    Navigator.pop(context, lvl.code);
+                  },
                   borderRadius: BorderRadius.circular(16),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -115,21 +123,7 @@ class _SelectLevelScreenState extends State<SelectLevelScreen> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity, height: 56,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context, _selected),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text(L10n.tr(context, 'confirm'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ),
+          // Confirm button removed: auto-pop on selection
         ],
       ),
     );

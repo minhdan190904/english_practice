@@ -64,6 +64,8 @@ enum WordPos {
   Color get color => badgeColors[index];
 
   static WordPos fromString(String pos) {
-    return WordPos.values[wordTypes.indexOf(pos)];
+    final idx = wordTypes.indexOf(pos);
+    // Safe fallback: return noun if pos is unknown/empty to avoid RangeError from -1 index
+    return idx >= 0 ? WordPos.values[idx] : WordPos.noun;
   }
 }

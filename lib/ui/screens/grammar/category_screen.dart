@@ -5,11 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../data/models/category_data.dart';
 import '../../../data/models/lesson.dart';
 import '../../../navigation/app_router.dart';
-import '../../blocs/iap/iap_bloc.dart';
 import '../../commons/ads/banner_ad_widget.dart';
-import '../../commons/ads/rewarded_ad_mixin.dart';
 import '../../commons/base_page.dart';
-import '../../commons/dialogs/paywall_dialog.dart';
 import '../../../utils/l10n.dart';
 import 'bloc/lesson_bloc.dart';
 import 'widget/category_item.dart';
@@ -23,7 +20,7 @@ class CategoryScreen extends StatefulWidget {
   State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
-class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
+class _CategoryScreenState extends State<CategoryScreen> {
   String query = '';
 
   @override
@@ -34,7 +31,6 @@ class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
                 (element.subTitle?.toLowerCase() ?? "").contains(query.toLowerCase());
           }).toList()
         : widget.category.lessons;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
     return BasePage(
       title: widget.category.title,
       child: Column(
@@ -45,7 +41,7 @@ class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
               border: const OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              prefixIcon: Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search),
             ),
             onChanged: _onSearch,
             onSubmitted: _onSearch,
@@ -68,15 +64,14 @@ class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
                           _onMark(queriedLesson[index], value);
                         },
                         lesson: queriedLesson[index],
-                        hasAds: !isPremium && index >= 3,
+                        hasAds: false,
                         onTap: () {
-                          _onTap(index, queriedLesson[index]);
+                          _onTap(queriedLesson[index]);
                         },
                       ),
                     ),
                     if (index == 1)
-                      BannerAdWidget(
-                        isPremium: isPremium,
+                      const BannerAdWidget(
                         paddingVertical: 16,
                         paddingHorizontal: 16,
                       ),
@@ -100,17 +95,7 @@ class _CategoryScreenState extends State<CategoryScreen> with RewardedAdMixin {
     context.read<LessonBloc>().add(LessonEvent.markLesson(id: queriedLesson.id, isMarked: value ?? false));
   }
 
-  _onTap(int index, Lesson lesson) {
-    final isPremium = context.read<IapBloc>().state.boughtNoAdsTime != null;
-    if (!isPremium && index >= 3) {
-      showRewardedAd((_, __) {
-        context.push(RoutePaths.lesson, extra: {'lesson': lesson});
-      });
-    } else {
-      context.push(RoutePaths.lesson, extra: {'lesson': lesson});
-    }
+  void _onTap(Lesson lesson) {
+    context.push(RoutePaths.lesson, extra: {'lesson': lesson});
   }
-
-  @override
-  bool get isPremium => context.read<IapBloc>().state.boughtNoAdsTime != null;
 }

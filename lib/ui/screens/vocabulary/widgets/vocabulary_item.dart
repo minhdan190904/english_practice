@@ -38,7 +38,9 @@ class VocabularyItem extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final locale = context.watch<SettingsBloc>().state.settingsSnapshot.locale;
     final showVi = locale == 'vi';
-    final pos = word.pos.split(', ');
+    // Filter out empty pos strings to avoid PosBadge crash on words with no/invalid pos
+    final pos = word.pos.split(', ').where((p) => p.isNotEmpty).toList();
+
     return InkWell(
       overlayColor: WidgetStateProperty.all(Colors.transparent),
       onTap: () => _openWordDetails(context),

@@ -54,6 +54,7 @@ dependencies:
   equatable: ^2.0.7
   in_app_purchase_android: ^0.4.0+1
   just_audio: ^0.9.46
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:
@@ -119,7 +120,7 @@ flutter:
     - assets/md/grammar_vi/
     - assets/md/grammar_vi/tenses/
     - assets/md/grammar_vi/tenses/past/
-    - assets/md/grammar_vi/tenses/future/
+    - assets/md/grammar_vi/tenses/Future/
     - assets/md/grammar_vi/tenses/present/
     - assets/md/grammar_vi/sentences/
     - assets/md/grammar_vi/words/

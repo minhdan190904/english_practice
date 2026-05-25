@@ -2,16 +2,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:in_app_review/in_app_review.dart';
 
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
-import '../../../navigation/app_router.dart';
 import '../../../utils/global_values.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
 import '../settings/bloc/settings_bloc.dart';
 import 'widgets/flashcard_app_dialog.dart';
+import 'widgets/flashcard_result_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  FlashCard Screen
@@ -33,6 +31,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
   late List<Word> _dontKnowWords;
   int _currentIndex = 0;
   int _totalWords = 0;
+  int _iKnowCount = 0; // tracks how many words the user said "I Know"
 
   // ── flip animation ───────────────────────────────────────────────────────
   late AnimationController _flipController;
@@ -143,19 +142,29 @@ class _FlashCardScreenState extends State<FlashCardScreen>
     context.read<VocabularyBloc>().add(
           VocabularyEvent.changeStatus(_currentWord, WordStatus.mastered),
         );
+    _iKnowCount++;
     _resetFlipInstant();
+
+    bool allDone = false;
     setState(() {
       _slideDirection = 1;
       _remainingWords.removeAt(_currentIndex);
       _cardKey++;
       if (_remainingWords.isEmpty) {
-        _onAllDone();
+        allDone = true;
         return;
       }
       if (_currentIndex >= _remainingWords.length) {
         _currentIndex = _remainingWords.length - 1;
       }
     });
+
+    // Navigate AFTER the current frame — never call navigate inside setState
+    if (allDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onAllDone();
+      });
+    }
   }
 
   void _onDontKnow() {
@@ -177,18 +186,18 @@ class _FlashCardScreenState extends State<FlashCardScreen>
   }
 
   void _onAllDone() {
-    if (!GlobalValues.isShowInAppReview) {
-      InAppReview.instance.requestReview();
-      GlobalValues.isShowInAppReview = true;
-    } else if (!GlobalValues.isShowFlashCardAppDialog) {
-      GlobalValues.isShowFlashCardAppDialog = true;
-      showDialog(context: context, builder: (_) => FlashcardAppDialog());
-    }
-    if (context.canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      context.go(RoutePaths.vocabulary);
-    }
+    GlobalValues.lastStudyTime = DateTime.now();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (resultCtx) => FlashcardResultScreen(
+          total: _totalWords,
+          known: _iKnowCount,
+          needReviewWords: _dontKnowWords,
+          onPracticeAgain: () => Navigator.of(resultCtx).pop(),
+          onBack: () => Navigator.of(resultCtx).pop(),
+        ),
+      ),
+    );
   }
 
   // ── build ─────────────────────────────────────────────────────────────────

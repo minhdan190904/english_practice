@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../../core/failure.dart';
 import '../../../generated/assets.dart';
 import '../../../utils/app_snack_bar.dart';
 import '../../../utils/extensions/go_router_extension.dart';
 import '../../../navigation/app_router.dart';
-import '../../blocs/iap/iap_bloc.dart';
-import '../../commons/dialogs/paywall_dialog.dart';
-import '../../commons/purchase_success_dialog.dart';
 import '../notifications/bloc/notifications_bloc.dart';
 import '../streak/bloc/streak_bloc.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
@@ -58,10 +54,8 @@ class _HomeNavigationState extends State<HomeNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final iapState = context.watch<IapBloc>().state;
     // Watch settings bloc to rebuild bottom bar on locale change
-    final locale = context.watch<SettingsBloc>().state.settingsSnapshot.locale;
-    final isLoading = iapState.isLoading;
+    context.watch<SettingsBloc>().state.settingsSnapshot.locale;
     final colorScheme = Theme.of(context).colorScheme;
 
     // Dùng currentIndex của shell để xác định tab đang active,
@@ -89,37 +83,6 @@ class _HomeNavigationState extends State<HomeNavigation> {
             }
           },
         ),
-        BlocListener<IapBloc, IapState>(
-          listener: (context, state) {
-            _handleError(context, state.failure);
-          },
-        ),
-        // [BUG FIX] Thống nhất premium check: dùng != null thay vì == -1
-        // để cả temporary (consumable) và permanent premium đều hiện dialog
-        BlocListener<IapBloc, IapState>(
-          listenWhen: (previous, current) {
-            return previous.boughtNoAdsTime != current.boughtNoAdsTime;
-          },
-          listener: (context, state) {
-            if (state.boughtNoAdsTime != null) {
-              showDialog(context: context, builder: (_) => PurchaseSuccessDialog());
-            }
-          },
-        ),
-        BlocListener<IapBloc, IapState>(
-          listenWhen: (previous, current) {
-            return previous.products != current.products;
-          },
-          listener: (context, state) {
-            // [BUG FIX] Dùng != null để check premium nhất quán với các screen khác
-            final isPremium = state.boughtNoAdsTime != null;
-            if (!isPremium) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                showDialog(context: context, builder: (_) => PaywallDialog());
-              });
-            }
-          },
-        ),
       ],
       child: Scaffold(
         // StreakButton chỉ hiện ở Tab 0 (Vocabulary branch)
@@ -131,24 +94,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
                 },
               )
             : null,
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(child: widget.child),
-              ],
-            ),
-            if (isLoading)
-              Container(
-                color: Colors.white.withAlpha(100),
-                alignment: Alignment.center,
-                child: LoadingAnimationWidget.threeArchedCircle(
-                  color: colorScheme.primary,
-                  size: 48,
-                ),
-              )
-          ],
-        ),
+        body: widget.child,
         bottomNavigationBar: Theme(
           data: Theme.of(context).copyWith(
             splashColor: Colors.transparent,

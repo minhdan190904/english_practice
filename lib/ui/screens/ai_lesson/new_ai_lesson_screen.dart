@@ -1,5 +1,6 @@
 import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import '../../../data/models/sample_passage_response.dart';
 import '../../../data/models/saved_lesson.dart';
@@ -18,7 +19,6 @@ class NewAiLessonScreen extends StatefulWidget {
 class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
   final TextEditingController _textController = TextEditingController();
   String _selectedLevelCode = 'B1';
-  String _selectedLevelLabel = 'B1 - Intermediate';
   bool _isLoading = false;
   String _loadingMessage = '';
 
@@ -35,17 +35,8 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
       ),
     );
     if (picked != null && mounted) {
-      final labels = {
-        'A1': 'A1 - Mới bắt đầu',
-        'A2': 'A2 - Sơ cấp',
-        'B1': 'B1 - Trung cấp',
-        'B2': 'B2 - Trung cao cấp',
-        'C1': 'C1 - Cao cấp',
-        'C2': 'C2 - Thành thạo',
-      };
       setState(() {
         _selectedLevelCode = picked;
-        _selectedLevelLabel = labels[picked] ?? picked;
       });
     }
   }
@@ -70,7 +61,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
 
     setState(() {
       _isLoading = true;
-      _loadingMessage = 'Đang tạo đoạn văn...';
+      _loadingMessage = L10n.tr(context, 'generating_passage');
     });
 
     try {
@@ -149,10 +140,12 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isLoading = false;
         _loadingMessage = '';
       });
+      }
     }
   }
 
@@ -170,6 +163,10 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -209,7 +206,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_selectedLevelLabel,
+                          Text(L10n.tr(context, 'level_${_selectedLevelCode.toLowerCase()}'),
                             style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                           Text(L10n.tr(context, 'current_english_level'),
                             style: textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
@@ -269,7 +266,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
               maxLines: 8,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: "Nhập chủ đề, từ khóa hoặc đoạn văn để học...\nVD: tại sao chó không ăn được sôcôla? / \"Dogs can't eat chocolate because...\"",
+                hintText: L10n.tr(context, 'input_text_hint'),
                 hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                 enabledBorder: OutlineInputBorder(
@@ -280,7 +277,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Word count: $_wordCount/300 (1000 words with Pro)',
+              '${L10n.tr(context, 'word_count')}$_wordCount/300 (1000${L10n.tr(context, 'words_with_pro')})',
               style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
             ),
             const SizedBox(height: 28),
@@ -344,7 +341,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                'AI will generate a personalized lesson based on your level.\nUpgrade to Pro for faster speed and improved lesson quality.',
+                L10n.tr(context, 'ai_generate_info'),
                 textAlign: TextAlign.center,
                 style: textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
               ),

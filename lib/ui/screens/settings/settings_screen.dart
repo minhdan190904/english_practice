@@ -4,12 +4,13 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../constants/words.dart';
 import '../../../data/models/word_status.dart';
 import '../../../generated/assets.dart';
-import '../../blocs/iap/iap_bloc.dart';
+
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import '../../commons/rounded_button.dart';
@@ -56,7 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final isGrantedNotificationsPermission = context.watch<NotificationsBloc>().state.isNotificationsGranted;
-    final isPremium = context.watch<IapBloc>().state.boughtNoAdsTime != null;
+
     final authState = context.watch<AuthCubit>().state;
 
     return BlocBuilder<SettingsBloc, SettingsState>(
@@ -298,9 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-              BannerAdWidget(
-                isPremium: isPremium,
-              ),
+              const BannerAdWidget(),
             ],
           ),
         );
@@ -421,12 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     switch (result) {
       case LinkResult.success:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(L10n.tr(context, "sync_success")),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _navigateHomeWithSuccess(context, L10n.tr(context, "sync_success"));
         break;
       case LinkResult.credentialAlreadyInUse:
         _showAccountConflictDialog(context);
@@ -442,6 +436,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
         break;
     }
+  }
+
+  /// Navigate to home (Vocabulary tab) and show success snackbar
+  void _navigateHomeWithSuccess(BuildContext context, String message) {
+    // Navigate to vocabulary (home tab)
+    context.go('/vocabulary');
+
+    // Show success snackbar after navigation
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    });
   }
 
   void _showAccountConflictDialog(BuildContext context) {
@@ -473,9 +494,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                context.read<AuthCubit>().signInWithGoogle();
+                final authCubit = context.read<AuthCubit>();
+                final success = await authCubit.signInWithGoogle();
+                if (context.mounted && success) {
+                  _navigateHomeWithSuccess(context, L10n.tr(context, "sync_success"));
+                }
               },
               icon: const Icon(Icons.cloud_download),
               label: Text(L10n.tr(context, "load_existing_data")),

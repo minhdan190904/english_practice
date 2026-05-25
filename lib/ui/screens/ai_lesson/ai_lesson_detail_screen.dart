@@ -41,10 +41,22 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
   final _player = DI().sl<AudioPlayer>();
   final Map<String, LockCachingAudioSource> _audioCache = {};
 
+  // Cached highlighted passage to avoid re-parsing on every setState
+  Widget? _cachedPassageWidget;
+  // Cached word map for quick lookup
+  late final Map<String, SelectedWord> _wordMap;
+  late final Set<String> _highlightSet;
+
   @override
   void initState() {
     super.initState();
     _preloadAudio();
+    // Pre-compute word map once
+    _wordMap = <String, SelectedWord>{};
+    for (final w in widget.selectedWords) {
+      _wordMap[w.word.toLowerCase()] = w;
+    }
+    _highlightSet = _wordMap.keys.toSet();
   }
 
   void _preloadAudio() {
@@ -266,15 +278,18 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
     );
   }
 
-  // ── Build highlighted + tappable passage ───────────────────────────────
+  // ── Build highlighted + tappable passage (cached) ──────────────────────
+  Widget _getHighlightedPassage(BuildContext context) {
+    // Return cached widget if available — avoids re-parsing regex on every setState
+    if (_cachedPassageWidget != null) return _cachedPassageWidget!;
+    _cachedPassageWidget = _buildHighlightedPassage(context);
+    return _cachedPassageWidget!;
+  }
+
   Widget _buildHighlightedPassage(BuildContext context) {
     final theme = Theme.of(context);
-    // Map word → SelectedWord for quick lookup
-    final wordMap = <String, SelectedWord>{};
-    for (final w in widget.selectedWords) {
-      wordMap[w.word.toLowerCase()] = w;
-    }
-    final highlightSet = wordMap.keys.toSet();
+    // Use pre-computed word map from initState
+    final wordTokenRegex = RegExp(r"^([^a-zA-Z']*)([a-zA-Z']+)([^a-zA-Z']*)$");
 
     final rawPassage = widget.passage.replaceAll('**', '').replaceAll('*', '');
     final rawWords = rawPassage.split(RegExp(r'(\s+)'));
@@ -285,15 +300,15 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
         spans.add(TextSpan(text: token));
         continue;
       }
-      final match = RegExp(r"^([^a-zA-Z']*)([a-zA-Z']+)([^a-zA-Z']*)$").firstMatch(token);
+      final match = wordTokenRegex.firstMatch(token);
       if (match != null) {
         final pre = match.group(1) ?? '';
         final word = match.group(2) ?? '';
         final post = match.group(3) ?? '';
-        final isHighlighted = highlightSet.contains(word.toLowerCase());
+        final isHighlighted = _highlightSet.contains(word.toLowerCase());
         if (isHighlighted) {
           if (pre.isNotEmpty) spans.add(TextSpan(text: pre));
-          final selectedWord = wordMap[word.toLowerCase()]!;
+          final selectedWord = _wordMap[word.toLowerCase()]!;
           spans.add(WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
@@ -361,12 +376,17 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
       );
     }).toList();
 
+    // Capture bloc references BEFORE pushing (they come from the ancestor tree)
+    final settingsBloc = context.read<SettingsBloc>();
+
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => DI().sl<VocabularyBloc>()),
             BlocProvider(create: (_) => DI().sl<IapBloc>()),
+            // Re-provide SettingsBloc so _BackCard's context.watch works
+            BlocProvider<SettingsBloc>.value(value: settingsBloc),
           ],
           child: FlashCardScreen(words: words, title: widget.title),
         ),
@@ -389,12 +409,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => Navigator.pop(context),
-          )
-        ],
+        actions: [],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -563,7 +578,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                     duration: const Duration(milliseconds: 320),
                     curve: Curves.easeInOut,
                     constraints: BoxConstraints(
-                      maxHeight: _showFull ? double.maxFinite : 140,
+                      maxHeight: _showFull ? 9999.0 : 140,
                     ),
                     child: ClipRect(
                       child: Stack(
@@ -573,7 +588,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                                   (widget.passageVi ?? '').replaceAll('**', '').replaceAll('*', ''),
                                   style: TextStyle(height: 1.6, fontSize: 16, color: Colors.grey.shade800),
                                 )
-                              : _buildHighlightedPassage(context),
+                              : _getHighlightedPassage(context),
                           // Gradient fade at bottom when collapsed
                           if (!_showFull)
                             Positioned(
@@ -718,7 +733,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                               Text(word.word,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 17,
+                                  fontSize: 20,
                                 )),
                               const Spacer(),
                               // Delete
@@ -888,6 +903,8 @@ class _LessonImage extends StatefulWidget {
 
 class _LessonImageState extends State<_LessonImage> {
   double _opacity = 0.0;
+  // Cache decoded bytes — base64Decode is expensive and should not run on every build
+  late final _imageBytes = base64Decode(widget.base64);
 
   @override
   void initState() {
@@ -900,7 +917,6 @@ class _LessonImageState extends State<_LessonImage> {
 
   @override
   Widget build(BuildContext context) {
-    final imageBytes = base64Decode(widget.base64);
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 400),
       opacity: _opacity,
@@ -913,9 +929,11 @@ class _LessonImageState extends State<_LessonImage> {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Image.memory(
-                imageBytes,
+                _imageBytes,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                // Prevent re-decoding when widget rebuilds
+                gaplessPlayback: true,
               ),
             ),
             // Subtle bottom gradient overlay for polish

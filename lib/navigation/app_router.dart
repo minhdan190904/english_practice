@@ -20,6 +20,7 @@ import '../ui/screens/onboaring/onboarding_screen.dart';
 import '../ui/screens/progress/progress_screen.dart';
 import '../ui/screens/review/flash_card_screen.dart';
 import '../ui/screens/review/review_screen.dart';
+import '../ui/screens/quiz/quiz_screen.dart';
 import '../ui/screens/settings/settings_screen.dart';
 import '../ui/screens/streak/bloc/streak_bloc.dart';
 import '../ui/screens/streak/streak_screen.dart';
@@ -27,6 +28,7 @@ import '../ui/screens/vocabulary/bloc/vocabulary_bloc.dart';
 import '../ui/screens/vocabulary/vocabulary_screen.dart';
 import '../ui/screens/vocabulary/word_details_screen.dart';
 import '../ui/screens/ai_lesson/ai_lesson_screen.dart';
+import '../ui/screens/typing/typing_challenge_screen.dart';
 
 part 'route_paths.dart';
 
@@ -88,6 +90,23 @@ class AppRouter {
                 final extra = state.extra as Map<String, dynamic>?;
                 final words = extra?['words'] as List<Word>;
                 return SwipeablePage(key: state.pageKey, builder: (context) => FlashCardScreen(words: words));
+              },
+            ),
+            GoRoute(
+              path: RoutePaths.quiz,
+              pageBuilder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                final studyWords = extra?['studyWords'] as List<Word>? ?? [];
+                return SwipeablePage(key: state.pageKey, builder: (context) => QuizScreen(studyWords: studyWords));
+              },
+            ),
+            GoRoute(
+              path: RoutePaths.typingChallenge,
+              pageBuilder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                final words = extra?['words'] as List<Word>? ?? [];
+                final title = extra?['title'] as String?;
+                return SwipeablePage(key: state.pageKey, builder: (context) => TypingChallengeScreen(words: words, title: title));
               },
             ),
           ]),

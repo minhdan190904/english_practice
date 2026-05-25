@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/data_sources/assets_data.dart';
 import '../data/data_sources/local_data.dart';
 import '../data/data_sources/pair_storage.dart';
+import '../data/data_sources/token_storage.dart';
 import '../data/data_sources/translation_data.dart';
 import '../data/repositories/global_repository.dart';
 import '../data/repositories/iap_repository.dart';
@@ -20,6 +21,9 @@ import '../data/repositories/auth_repository.dart';
 import '../data/repositories/ai_repository.dart';
 import '../data/repositories/streak_repository.dart';
 import '../data/repositories/progress_repository.dart';
+import '../data/repositories/srs_repository.dart';
+import '../data/repositories/achievement_repository.dart';
+import '../utils/achievement_checker.dart';
 import '../ui/blocs/auth/auth_cubit.dart';
 import '../ui/blocs/iap/iap_bloc.dart';
 import '../ui/blocs/translate/translate_cubit.dart';
@@ -51,6 +55,8 @@ class DI {
       () => VocabularyBloc(
         oxfordWordsRepository: sl(),
         progressRepository: sl(),
+        srsRepository: sl(),
+        achievementChecker: sl(),
       ),
     );
 
@@ -135,7 +141,7 @@ class DI {
     );
 
     sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepository(),
+      () => AuthRepository(tokenStorage: sl()),
     );
 
     sl.registerLazySingleton<AiRepository>(
@@ -187,6 +193,7 @@ class DI {
     sl.registerLazySingleton<Dio>(
       () => BackendDio(
         connectivity: Connectivity(),
+        tokenStorage: sl(),
       ).dio,
       instanceName: 'BackendDio',
     );
@@ -218,6 +225,24 @@ class DI {
     final prefs = await SharedPreferences.getInstance();
     sl.registerLazySingleton<SharedPreferences>(
       () => prefs,
+    );
+
+    // Token storage (must be before BackendDio and AuthRepository)
+    sl.registerLazySingleton<TokenStorage>(
+      () => TokenStorage(),
+    );
+
+    // SRS & Achievement system
+    sl.registerLazySingleton<SrsRepository>(
+      () => SrsRepository(prefs: sl()),
+    );
+
+    sl.registerLazySingleton<AchievementRepository>(
+      () => AchievementRepository(prefs: sl()),
+    );
+
+    sl.registerLazySingleton<AchievementChecker>(
+      () => AchievementChecker(repository: sl()),
     );
   }
 }
