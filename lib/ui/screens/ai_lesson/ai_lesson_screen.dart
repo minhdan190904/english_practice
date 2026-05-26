@@ -81,10 +81,10 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
               passageVi: lesson.passageVi,
               selectedWords: selectedWords,
               imageBase64: lesson.imageBase64,
+              sentences: lesson.sentences,
             ),
           ),
-        )
-        .then((_) => _refresh());
+        );
   }
 
   @override
@@ -104,7 +104,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
         child: FutureBuilder<List<SavedLesson>>(
           future: _lessonsFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 

@@ -105,13 +105,14 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
             .toList(),
         createdAt: DateTime.now(),
         imageBase64: lessonResult.imageBase64,
+        sentences: lessonResult.sentences,
       );
       await SavedLessonsRepository().save(lesson);
 
       if (!mounted) return;
 
-      // Step 5: Navigate directly to lesson detail — pop select topic screen
-      Navigator.of(context).pushReplacement(
+      // Step 5: Navigate directly to lesson detail — pop select topic screen and new lesson screen
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => AiLessonDetailScreen(
             title: lessonResult.title,
@@ -119,8 +120,10 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
             passageVi: lessonResult.passageVi,
             selectedWords: selectedWords,
             imageBase64: lessonResult.imageBase64,
+            sentences: lessonResult.sentences,
           ),
         ),
+        (route) => route.isFirst,
       );
     } catch (e) {
       if (mounted) {

@@ -117,11 +117,12 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
             .toList(),
         createdAt: DateTime.now(),
         imageBase64: result.imageBase64,
+        sentences: result.sentences,
       );
       await SavedLessonsRepository().save(lesson);
 
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).push(
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) => AiLessonDetailScreen(
               title: result.title,
@@ -129,8 +130,10 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
               passageVi: result.passageVi,
               selectedWords: wordsForDetail,
               imageBase64: result.imageBase64,
+              sentences: result.sentences,
             ),
           ),
+          (route) => route.isFirst,
         );
       }
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'sentence_pair.dart';
 
 class SavedLesson {
   final String id;
@@ -12,6 +13,7 @@ class SavedLesson {
   final List<SavedWord> words;
   final DateTime createdAt;
   final String? imageBase64;
+  final List<SentencePair>? sentences;
 
   SavedLesson({
     required this.id,
@@ -21,6 +23,7 @@ class SavedLesson {
     required this.words,
     required this.createdAt,
     this.imageBase64,
+    this.sentences,
   });
 
   int get wordCount => words.length;
@@ -38,6 +41,7 @@ class SavedLesson {
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
         'imageBase64': imageBase64,
+        'sentences': sentences?.map((s) => s.toJson()).toList(),
       };
 
   /// Convert to API sync format
@@ -49,6 +53,7 @@ class SavedLesson {
         'imageBase64': imageBase64,
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
+        'sentences': sentences?.map((s) => s.toJson()).toList(),
       };
 
   factory SavedLesson.fromJson(Map<String, dynamic> json) => SavedLesson(
@@ -61,6 +66,11 @@ class SavedLesson {
             .toList(),
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         imageBase64: json['imageBase64'],
+        sentences: json['sentences'] != null
+            ? (json['sentences'] as List)
+                .map((e) => SentencePair.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+            : null,
       );
 }
 

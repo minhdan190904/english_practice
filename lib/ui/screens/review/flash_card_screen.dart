@@ -215,7 +215,15 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       onPopInvokedWithResult: (didPop, _) {
         if (!GlobalValues.isShowFlashCardAppDialog) {
           GlobalValues.isShowFlashCardAppDialog = true;
-          showDialog(context: context, builder: (_) => FlashcardAppDialog());
+          final navigator = Navigator.of(context);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (navigator.mounted) {
+              showDialog(
+                context: navigator.context,
+                builder: (_) => const FlashcardAppDialog(),
+              );
+            }
+          });
         }
       },
       child: Scaffold(

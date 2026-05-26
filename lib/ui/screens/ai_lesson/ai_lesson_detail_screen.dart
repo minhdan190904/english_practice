@@ -1,11 +1,13 @@
 import 'dart:convert';
 import '../../../../utils/l10n.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:get_it/get_it.dart';
 import '../../../configs/di.dart';
 import '../../../data/models/sample_passage_response.dart';
+import '../../../data/models/sentence_pair.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/sense.dart';
 import '../../../data/models/example.dart';
@@ -21,6 +23,7 @@ class AiLessonDetailScreen extends StatefulWidget {
   final String? passageVi;
   final List<SelectedWord> selectedWords;
   final String? imageBase64;
+  final List<SentencePair>? sentences;
 
   const AiLessonDetailScreen({
     super.key,
@@ -29,6 +32,7 @@ class AiLessonDetailScreen extends StatefulWidget {
     this.passageVi,
     required this.selectedWords,
     this.imageBase64,
+    this.sentences,
   });
 
   @override
@@ -41,11 +45,16 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
   final _player = DI().sl<AudioPlayer>();
   final Map<String, LockCachingAudioSource> _audioCache = {};
 
+  // Tap-to-translate: which sentence is currently selected
+  int? _selectedSentenceIndex;
+
   // Cached highlighted passage to avoid re-parsing on every setState
   Widget? _cachedPassageWidget;
   // Cached word map for quick lookup
   late final Map<String, SelectedWord> _wordMap;
   late final Set<String> _highlightSet;
+  // Vietnamese highlight: shortMeaningVi → SelectedWord
+  late final Map<String, SelectedWord> _viWordMap;
 
   @override
   void initState() {
@@ -57,6 +66,13 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
       _wordMap[w.word.toLowerCase()] = w;
     }
     _highlightSet = _wordMap.keys.toSet();
+    // Build Vietnamese highlight map: shortMeaningVi (or definitionVi) → SelectedWord
+    _viWordMap = <String, SelectedWord>{};
+    for (final w in widget.selectedWords) {
+      if (w.shortMeaningVi?.isNotEmpty == true) {
+        _viWordMap[w.shortMeaningVi!.toLowerCase()] = w;
+      }
+    }
   }
 
   void _preloadAudio() {
@@ -350,6 +366,226 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
     );
   }
 
+  // ── Sentence-by-sentence passage with tap-to-reveal Vietnamese ──────────
+  Widget _buildSentencePassage(BuildContext context) {
+    final sentences = widget.sentences!;
+    final theme = Theme.of(context);
+
+    // Build all sentence spans inline for natural text wrapping
+    final allSpans = <InlineSpan>[];
+    for (int i = 0; i < sentences.length; i++) {
+      final sentence = sentences[i];
+      final isSelected = _selectedSentenceIndex == i;
+
+      // Split sentence into words and build spans with vocab highlighting
+      final sentenceText = sentence.en.replaceAll('**', '').replaceAll('*', '');
+      final tokens = sentenceText.split(RegExp(r'(?<=\s)|(?=\s)'));
+      final wordTokenRegex = RegExp(r"^([^a-zA-Z']*)([a-zA-Z']+)([^a-zA-Z']*)$");
+
+      for (final token in tokens) {
+        if (token.trim().isEmpty) {
+          allSpans.add(TextSpan(text: token));
+          continue;
+        }
+        final match = wordTokenRegex.firstMatch(token);
+        if (match != null) {
+          final pre = match.group(1) ?? '';
+          final word = match.group(2) ?? '';
+          final post = match.group(3) ?? '';
+          final isHighlighted = _highlightSet.contains(word.toLowerCase());
+
+          if (isHighlighted) {
+            if (pre.isNotEmpty) {
+              allSpans.add(TextSpan(
+                text: pre,
+                recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+              ));
+            }
+            // Vocab word — tap shows word meaning
+            allSpans.add(TextSpan(
+              text: word,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                backgroundColor: const Color(0xFFFDE68A),
+                color: Colors.black87,
+              ),
+              recognizer: TapGestureRecognizer()..onTap = () {
+                _showWordMeaning(context, _wordMap[word.toLowerCase()]!);
+              },
+            ));
+            if (post.isNotEmpty) {
+              allSpans.add(TextSpan(
+                text: post,
+                recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+              ));
+            }
+          } else {
+            // Non-vocab word — tap toggles sentence translation
+            allSpans.add(TextSpan(
+              text: token,
+              style: isSelected
+                  ? TextStyle(
+                      backgroundColor: Colors.red.withAlpha(20),
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.red.shade300,
+                      decorationStyle: TextDecorationStyle.solid,
+                      decorationThickness: 1.5,
+                    )
+                  : null,
+              recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+            ));
+          }
+        } else {
+          allSpans.add(TextSpan(
+            text: token,
+            recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+          ));
+        }
+      }
+      // Space between sentences
+      if (i < sentences.length - 1) {
+        allSpans.add(const TextSpan(text: ' '));
+      }
+    }
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        // The flowing paragraph
+        RichText(
+          text: TextSpan(
+            style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: Colors.black87),
+            children: allSpans,
+          ),
+        ),
+      ],
+    ),
+  );
+  }
+
+  void _showTranslationDialog(BuildContext context, int index) {
+    setState(() {
+      _selectedSentenceIndex = index;
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('🇻🇳', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text('Bản dịch', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _highlightVietnameseSentence(
+                  context,
+                  widget.sentences![index].vi,
+                  baseStyle: const TextStyle(
+                    fontSize: 18,
+                    height: 1.5,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _selectedSentenceIndex = null;
+        });
+      }
+    });
+  }
+
+  /// Highlight vocab words in a Vietnamese sentence using shortMeaningVi matching
+  Widget _highlightVietnameseSentence(BuildContext context, String viSentence, {TextStyle? baseStyle}) {
+    final theme = Theme.of(context);
+    final defaultStyle = baseStyle ?? theme.textTheme.bodyMedium?.copyWith(
+      color: Colors.grey.shade700,
+      fontStyle: FontStyle.italic,
+      height: 1.5,
+    );
+    
+    if (_viWordMap.isEmpty) {
+      return Text(
+        viSentence,
+        style: defaultStyle,
+      );
+    }
+
+    // Try to find and highlight Vietnamese vocab words in the sentence
+    final spans = <TextSpan>[];
+    String remaining = viSentence;
+
+    while (remaining.isNotEmpty) {
+      int earliestIdx = remaining.length;
+      String? matchedKey;
+
+      // Find the earliest match of any Vietnamese vocab word
+      for (final key in _viWordMap.keys) {
+        final idx = remaining.toLowerCase().indexOf(key);
+        if (idx != -1 && idx < earliestIdx) {
+          earliestIdx = idx;
+          matchedKey = key;
+        }
+      }
+
+      if (matchedKey != null && earliestIdx < remaining.length) {
+        // Add text before the match
+        if (earliestIdx > 0) {
+          spans.add(TextSpan(text: remaining.substring(0, earliestIdx)));
+        }
+        // Add the highlighted match (use original case from sentence)
+        final matchText = remaining.substring(earliestIdx, earliestIdx + matchedKey.length);
+        spans.add(TextSpan(
+          text: matchText,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            backgroundColor: Color(0xFFFDE68A),
+            color: Colors.black87,
+          ),
+        ));
+        remaining = remaining.substring(earliestIdx + matchedKey.length);
+      } else {
+        // No more matches
+        spans.add(TextSpan(text: remaining));
+        break;
+      }
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: defaultStyle,
+        children: spans,
+      ),
+    );
+  }
+
+  /// Build the full Vietnamese passage with highlighted vocab (for "Dịch" tab)
+  Widget _buildVietnameseFullPassage(BuildContext context) {
+    final sentences = widget.sentences!;
+    final fullVi = sentences.map((s) => s.vi).join(' ');
+    return _highlightVietnameseSentence(context, fullVi);
+  }
+
   void _practiceNow() {
     final locale = context.read<SettingsBloc>().state.settingsSnapshot.locale;
     final showVi = locale == 'vi';
@@ -405,11 +641,14 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-            overflow: TextOverflow.ellipsis),
-        centerTitle: true,
-        actions: [],
+        title: Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: false,
+        titleSpacing: 0,
+        actions: const [],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -549,13 +788,19 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                 children: [
                   Icon(Icons.touch_app_rounded, size: 14, color: colorScheme.primary.withAlpha(160)),
                   const SizedBox(width: 6),
-                  Text(
-                    showVi
-                        ? 'Nhấn vào từ được tô vàng để xem nghĩa'
-                        : 'Tap highlighted words to see meaning',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary.withAlpha(160),
-                      fontStyle: FontStyle.italic,
+                  Expanded(
+                    child: Text(
+                      widget.sentences != null && widget.sentences!.isNotEmpty
+                          ? (showVi
+                              ? 'Nhấn vào câu để xem dịch • Nhấn từ vàng để xem nghĩa'
+                              : 'Tap sentence for translation • Tap yellow words for meaning')
+                          : (showVi
+                              ? 'Nhấn vào từ được tô vàng để xem nghĩa'
+                              : 'Tap highlighted words to see meaning'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary.withAlpha(160),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ],
@@ -584,11 +829,15 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       child: Stack(
                         children: [
                           _isVi
-                              ? Text(
-                                  (widget.passageVi ?? '').replaceAll('**', '').replaceAll('*', ''),
-                                  style: TextStyle(height: 1.6, fontSize: 16, color: Colors.grey.shade800),
-                                )
-                              : _getHighlightedPassage(context),
+                              ? (widget.sentences != null && widget.sentences!.isNotEmpty
+                                  ? _buildVietnameseFullPassage(context)
+                                  : Text(
+                                      (widget.passageVi ?? '').replaceAll('**', '').replaceAll('*', ''),
+                                      style: TextStyle(height: 1.6, fontSize: 16, color: Colors.grey.shade800),
+                                    ))
+                              : (widget.sentences != null && widget.sentences!.isNotEmpty
+                                  ? _buildSentencePassage(context)
+                                  : _getHighlightedPassage(context)),
                           // Gradient fade at bottom when collapsed
                           if (!_showFull)
                             Positioned(

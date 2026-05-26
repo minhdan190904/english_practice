@@ -1,3 +1,5 @@
+import 'sentence_pair.dart';
+
 class SamplePassageResponse {
   final String title;
   final String passage;
@@ -7,6 +9,7 @@ class SamplePassageResponse {
   final String level;
   final int wordCount;
   final String? imageBase64;
+  final List<SentencePair>? sentences;
 
   SamplePassageResponse({
     required this.title,
@@ -17,9 +20,17 @@ class SamplePassageResponse {
     required this.level,
     required this.wordCount,
     this.imageBase64,
+    this.sentences,
   });
 
   factory SamplePassageResponse.fromJson(Map<String, dynamic> json) {
+    List<SentencePair>? sentencesList;
+    if (json['sentences'] != null) {
+      sentencesList = (json['sentences'] as List)
+          .map((e) => SentencePair.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
     return SamplePassageResponse(
       title: json['title'] ?? '',
       passage: json['passage'] ?? '',
@@ -32,6 +43,7 @@ class SamplePassageResponse {
       level: json['level'] ?? '',
       wordCount: json['wordCount'] ?? 0,
       imageBase64: json['imageBase64'],
+      sentences: sentencesList,
     );
   }
 }
