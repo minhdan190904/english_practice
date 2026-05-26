@@ -148,7 +148,7 @@ class DI {
       () => AiRepository(dio: sl(instanceName: 'BackendDio')),
     );
 
-    sl.registerFactory(
+    sl.registerLazySingleton<AuthCubit>(
       () => AuthCubit(
         authRepository: sl(),
       ),

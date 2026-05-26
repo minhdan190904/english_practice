@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../../data/models/app_user.dart';
 
 class AuthState {
-  final User? user;
+  final AppUser? user;
   final bool isLoading;
   final String? errorMessage;
 
@@ -16,7 +16,7 @@ class AuthState {
   bool get hasGoogleLinked => user != null && !user!.isAnonymous;
 
   AuthState copyWith({
-    User? user,
+    AppUser? user,
     bool? isLoading,
     String? errorMessage,
   }) {

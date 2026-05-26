@@ -106,6 +106,7 @@ class Assets {
   static const String svgUndo = 'assets/svg/undo.svg';
   static const String svgVocabulary = 'assets/svg/vocabulary.svg';
   static const String svgVolumeUp = 'assets/svg/volume_up.svg';
+  static const String svgGoogle = 'assets/svg/google.svg';
   static const String tensesTenses = 'assets/md/grammar/tenses/tenses.md';
   static const String wordFamiliesAdjectives = 'assets/md/grammar/words/word__families/adjectives.md';
   static const String wordFamiliesAdverbs = 'assets/md/grammar/words/word__families/adverbs.md';

@@ -46,6 +46,10 @@ class L10n {
       'streaks': 'Streaks',
 
       'sync_with_google': 'Sync data with Google',
+      'link_google': 'Link with Google',
+      'switch_account': 'Switch account',
+      'guest_account': 'Guest Account',
+      'not_synced': 'Not synced with Google',
       'sync_success': 'Synced with Google successfully!',
       'sync_error': 'Sync failed. Please try again.',
       'account_conflict_title': 'Existing data found! 💾',
@@ -55,6 +59,9 @@ class L10n {
       'go_back': 'Go back',
       'anonymous_user': 'Guest User',
       'sync_description': 'Sync your learning progress with Google to keep it safe across devices.',
+      'syncing': 'Syncing data...',
+      'signing_out': 'Signing out...',
+      'signed_out': 'Signed out successfully',
 
       'remove_ads': 'Remove Ads',
       'premium': 'Premium',
@@ -207,6 +214,10 @@ class L10n {
       'streaks': 'Ngày',
 
       'sync_with_google': 'Đồng bộ dữ liệu với Google',
+      'link_google': 'Liên kết với Google',
+      'switch_account': 'Chuyển tài khoản',
+      'guest_account': 'Tài khoản khách',
+      'not_synced': 'Chưa đồng bộ với Google',
       'sync_success': 'Đồng bộ với Google thành công!',
       'sync_error': 'Đồng bộ thất bại. Vui lòng thử lại.',
       'account_conflict_title': 'Phát hiện dữ liệu học tập! 💾',
@@ -216,6 +227,9 @@ class L10n {
       'go_back': 'Quay lại',
       'anonymous_user': 'Người dùng khách',
       'sync_description': 'Đồng bộ tiến trình học tập với Google để bảo toàn dữ liệu trên mọi thiết bị.',
+      'syncing': 'Đang đồng bộ dữ liệu...',
+      'signing_out': 'Đang đăng xuất...',
+      'signed_out': 'Đã đăng xuất thành công',
 
       'remove_ads': 'Xóa quảng cáo',
       'premium': 'Cao cấp',

@@ -15,6 +15,7 @@ import '../ui/screens/grammar/category_screen.dart';
 import '../ui/screens/grammar/lesson_screen.dart';
 import '../ui/screens/grammar/grammar_screen.dart';
 import '../ui/screens/home_navigation/home_navigation.dart';
+import '../ui/screens/post_auth/post_auth_splash_screen.dart';
 import '../ui/screens/notifications/bloc/notifications_bloc.dart';
 import '../ui/screens/onboaring/onboarding_screen.dart';
 import '../ui/screens/progress/progress_screen.dart';
@@ -53,7 +54,7 @@ class AppRouter {
         builder: (context, state, shellRoutes) {
           return MultiBlocProvider(
             providers: [
-              BlocProvider(create: (context) => DI().sl<VocabularyBloc>()),
+              BlocProvider.value(value: DI().sl<VocabularyBloc>()),
               BlocProvider(create: (context) => DI().sl<NotificationsBloc>()),
               BlocProvider(create: (context) => DI().sl<LessonBloc>()),
               BlocProvider(create: (context) => DI().sl<StreakBloc>()),
@@ -163,6 +164,17 @@ class AppRouter {
       GoRoute(
         path: RoutePaths.streak,
         pageBuilder: (context, state) => SwipeablePage(key: state.pageKey, builder: (context) => const StreakScreen()),
+      ),
+      GoRoute(
+        path: RoutePaths.postAuth,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final mode = extra?['mode'] as String? ?? 'login';
+          return NoTransitionPage(
+            key: state.pageKey,
+            child: PostAuthSplashScreen(mode: mode),
+          );
+        },
       ),
     ],
   );

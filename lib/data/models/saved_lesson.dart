@@ -191,30 +191,46 @@ class SavedLessonsRepository {
     }
   }
 
-  /// Sync all local lessons to server. Call on app start (NOT on account switch).
+  /// Sync lessons with server on app start.
+  /// PULL-FIRST: Server is source of truth. Local data supplements, never replaces.
+  /// This prevents data from a previous account leaking to the current user.
   Future<void> syncWithServer() async {
     try {
       final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
+
+      // Step 1: Always PULL from server first (source of truth)
+      final response = await dio.get('/lessons');
+      if (response.statusCode != 200) return;
+
+      final serverLessons = (response.data as List)
+          .map((e) => SavedLesson.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      final serverIds = serverLessons.map((l) => l.id).toSet();
+
+      // Step 2: Get local lessons
       final localLessons = await getAll();
 
       if (localLessons.isEmpty) {
-        // No local lessons — pull from server
-        await pullFromServer();
+        // No local data — just save server data
+        await _saveAllLocal(serverLessons);
+        debugPrint('📖 ✅ Pulled ${serverLessons.length} lessons from server');
         return;
       }
 
-      // Push local lessons to server
-      final syncData = localLessons.map((l) => l.toSyncJson()).toList();
-      final response = await dio.post('/lessons/sync', data: syncData);
+      // Step 3: Find local-only lessons (created offline, not on server yet)
+      final localOnlyLessons = localLessons.where((l) => !serverIds.contains(l.id)).toList();
 
-      if (response.statusCode == 200) {
-        // Server returns merged list — save locally
-        final serverLessons = (response.data as List)
-            .map((e) => SavedLesson.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
-        await _saveAllLocal(serverLessons);
-        debugPrint('📖 ✅ Synced ${serverLessons.length} lessons with server');
+      if (localOnlyLessons.isNotEmpty) {
+        // Push only the truly new local lessons to server
+        final syncData = localOnlyLessons.map((l) => l.toSyncJson()).toList();
+        await dio.post('/lessons/sync', data: syncData);
+        debugPrint('📖 ⬆️ Pushed ${localOnlyLessons.length} new local lessons to server');
       }
+
+      // Step 4: Merge — server data + local-only data
+      final merged = [...serverLessons, ...localOnlyLessons];
+      await _saveAllLocal(merged);
+      debugPrint('📖 ✅ Synced: ${serverLessons.length} from server, ${localOnlyLessons.length} local-only');
     } catch (e) {
       debugPrint('📖 ❌ Lesson sync failed: $e');
     }

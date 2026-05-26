@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -29,6 +28,25 @@ import 'ui/screens/settings/bloc/settings_bloc.dart';
 import 'utils/ad/consent_manager.dart';
 import 'utils/global_values.dart';
 import 'utils/local_notifications_tools.dart';
+
+/// Get Android device ID (ANDROID_ID)
+Future<String> _getDeviceId() async {
+  try {
+    // Use MethodChannel to get ANDROID_ID
+    const channel = MethodChannel('com.minhdan.english_practice/device');
+    final String? deviceId = await channel.invokeMethod('getDeviceId');
+    if (deviceId != null && deviceId.isNotEmpty) {
+      return deviceId;
+    }
+  } catch (e) {
+    debugPrint('Failed to get device ID via channel: $e');
+  }
+
+  // Fallback: use Settings.Secure.ANDROID_ID via platform
+  // This shouldn't happen if the channel is set up correctly
+  debugPrint('⚠️ Using fallback device ID');
+  return 'fallback_${DateTime.now().millisecondsSinceEpoch}';
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,21 +99,14 @@ void main() async {
 
   await runStep('OxfordWordsRepository.initData', () => DI().sl<OxfordWordsRepository>().initData());
 
-  // Auto sign-in anonymously if no user is currently signed in
-  await runStep('AnonymousAuth', () async {
-    final firebaseAuth = FirebaseAuth.instance;
-    if (firebaseAuth.currentUser == null) {
-      await firebaseAuth.signInAnonymously();
-      debugPrint('Signed in anonymously: ${firebaseAuth.currentUser?.uid}');
-    } else {
-      debugPrint('Already signed in: ${firebaseAuth.currentUser?.uid} (anonymous: ${firebaseAuth.currentUser?.isAnonymous})');
-    }
-  });
-
-  // Register with backend to get JWT tokens (always run after Firebase auth)
-  await runStep('RegisterWithBackend', () async {
+  // Register with backend using device ID (replaces Firebase anonymous auth)
+  await runStep('RegisterWithDeviceId', () async {
+    final deviceId = await _getDeviceId();
+    debugPrint('Device ID: $deviceId');
     final authRepo = DI().sl<AuthRepository>();
-    await authRepo.registerWithBackend();
+    final user = await authRepo.registerWithDeviceId(deviceId);
+    // Update AuthCubit with user info
+    DI().sl<AuthCubit>().setUser(user);
   });
 
   // Sync data with server (background, non-blocking)
@@ -149,8 +160,8 @@ void main() async {
         BlocProvider(
           create: (context) => DI().sl<SettingsBloc>(),
         ),
-        BlocProvider(
-          create: (context) => DI().sl<AuthCubit>(),
+        BlocProvider.value(
+          value: DI().sl<AuthCubit>(),
         ),
         BlocProvider(
           create: (context) => DI().sl<IapBloc>(),

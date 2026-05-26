@@ -22,7 +22,7 @@ class AiLessonScreen extends StatefulWidget {
 class _AiLessonScreenState extends State<AiLessonScreen> {
   late Future<List<SavedLesson>> _lessonsFuture;
   final SavedLessonsRepository _repo = SavedLessonsRepository();
-  String? _lastUserId;
+  int? _lastUserId;
 
   @override
   void initState() {
@@ -34,7 +34,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Auto-reload when user changes (account switch)
-    final currentUserId = context.read<AuthCubit>().state.user?.uid;
+    final currentUserId = context.read<AuthCubit>().state.user?.id;
     if (_lastUserId != null && _lastUserId != currentUserId) {
       _loadLessons();
     }
@@ -93,7 +93,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return BlocListener<AuthCubit, AuthState>(
-      listenWhen: (prev, curr) => prev.user?.uid != curr.user?.uid,
+      listenWhen: (prev, curr) => prev.user?.id != curr.user?.id,
       listener: (context, state) {
         // Account changed — reload lessons
         _refresh();

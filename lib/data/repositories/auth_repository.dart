@@ -1,17 +1,43 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 import '../data_sources/token_storage.dart';
-import '../models/saved_lesson.dart';
+import '../models/app_user.dart';
 import '../../configs/app_secrets.dart';
 
-/// Result type for linking Google account to anonymous user
-enum LinkResult {
+/// Result of checking if a Google account exists on the backend
+class CheckGoogleResult {
+  final bool exists;
+  final int? existingUserId;
+  final String? existingEmail;
+  final String? existingDisplayName;
+  final String? existingAvatarUrl;
+
+  CheckGoogleResult({
+    required this.exists,
+    this.existingUserId,
+    this.existingEmail,
+    this.existingDisplayName,
+    this.existingAvatarUrl,
+  });
+
+  factory CheckGoogleResult.fromJson(Map<String, dynamic> json) {
+    return CheckGoogleResult(
+      exists: json['exists'] as bool,
+      existingUserId: json['existingUserId'] as int?,
+      existingEmail: json['existingEmail'] as String?,
+      existingDisplayName: json['existingDisplayName'] as String?,
+      existingAvatarUrl: json['existingAvatarUrl'] as String?,
+    );
+  }
+}
+
+/// Result type for Google sync operations
+enum SyncResult {
   success,
-  credentialAlreadyInUse,
   cancelled,
   error,
 }
@@ -19,58 +45,52 @@ enum LinkResult {
 class AuthRepository {
   static const String _apiKey = AppSecrets.apiClientKey;
 
-  final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
   final TokenStorage _tokenStorage;
 
+  /// Cached user info from backend
+  AppUser? _currentUser;
+
   AuthRepository({
-    FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
     required TokenStorage tokenStorage,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+  })  : _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _tokenStorage = tokenStorage;
 
-  Stream<User?> get user => _firebaseAuth.authStateChanges();
+  AppUser? get currentUser => _currentUser;
 
-  User? get currentUser => _firebaseAuth.currentUser;
+  /// Get a raw Dio (no auth interceptor) for public endpoints
+  Dio _rawDio() {
+    final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
+    return Dio()
+      ..options = BaseOptions(
+        baseUrl: dio.options.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': _apiKey,
+        },
+        connectTimeout: dio.options.connectTimeout,
+        receiveTimeout: dio.options.receiveTimeout,
+      );
+  }
 
-  /// Register/login with backend — exchanges Firebase token for app JWT.
-  /// Called after any Firebase sign-in (anonymous or Google).
-  Future<void> registerWithBackend() async {
+  /// Get authenticated Dio for protected endpoints
+  Dio _authedDio() {
+    return GetIt.I<Dio>(instanceName: 'BackendDio');
+  }
+
+  // ─── Device ID Registration ────────────────────────────────────
+
+  /// Register/login with Android device ID.
+  /// Called on app start — creates a guest account or returns existing one.
+  Future<AppUser?> registerWithDeviceId(String deviceId) async {
     try {
-      final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser == null) {
-        debugPrint('🔐 No Firebase user, skipping backend register');
-        return;
-      }
-
-      final firebaseToken = await firebaseUser.getIdToken();
-      if (firebaseToken == null) {
-        debugPrint('🔐 No Firebase token, skipping backend register');
-        return;
-      }
-
-      debugPrint('🔐 Registering with backend...');
-      final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
-      
-      // Use a raw Dio call without auth interceptor for register
-      final rawDio = Dio()
-        ..options = BaseOptions(
-          baseUrl: dio.options.baseUrl,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': _apiKey,
-          },
-          connectTimeout: dio.options.connectTimeout,
-          receiveTimeout: dio.options.receiveTimeout,
-        );
-
-      final response = await rawDio.post(
-        '/user/register',
-        data: {'firebaseToken': firebaseToken},
+      debugPrint('🔐 Registering with device ID: $deviceId');
+      final response = await _rawDio().post(
+        '/user/register-device',
+        data: {'deviceId': deviceId},
       );
 
       if (response.statusCode == 200) {
@@ -79,12 +99,161 @@ class AuthRepository {
           accessToken: data['accessToken'] as String,
           refreshToken: data['refreshToken'] as String,
         );
-        debugPrint('🔐 ✅ Backend register success — tokens saved');
+
+        if (data['user'] != null) {
+          _currentUser = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+        }
+
+        debugPrint('🔐 ✅ Device register success — user: ${_currentUser?.id}');
+        return _currentUser;
       }
     } catch (e) {
-      debugPrint('🔐 ❌ Backend register error: $e');
+      debugPrint('🔐 ❌ Device register error: $e');
+    }
+    return null;
+  }
+
+  // ─── Google Sign-In Helper ─────────────────────────────────────
+
+  /// Perform Google Sign-In and get Firebase ID token.
+  /// Returns null if cancelled.
+  Future<String?> getFirebaseIdToken({bool forceNewAccount = false}) async {
+    try {
+      if (forceNewAccount) {
+        await _googleSignIn.signOut();
+      }
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null; // cancelled
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final firebase_auth.OAuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final firebase_auth.UserCredential firebaseCredential =
+          await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
+
+      final String? firebaseIdToken = await firebaseCredential.user?.getIdToken();
+      return firebaseIdToken;
+    } catch (e) {
+      debugPrint('🔐 ❌ getFirebaseIdToken error: $e');
+      return null;
     }
   }
+
+  // ─── Check Google ──────────────────────────────────────────────
+
+  /// Check if a Google account is already linked to an existing user.
+  Future<CheckGoogleResult?> checkGoogle(String firebaseIdToken) async {
+    try {
+      final response = await _authedDio().post(
+        '/user/check-google',
+        data: {'googleIdToken': firebaseIdToken},
+      );
+
+      if (response.statusCode == 200) {
+        return CheckGoogleResult.fromJson(response.data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('🔐 ❌ Check Google error: $e');
+    }
+    return null;
+  }
+
+  // ─── Link Google ───────────────────────────────────────────────
+
+  /// Link Google account to current account (keeps current ID, adds Google info).
+  /// Used when user wants to sync their current guest account with Google.
+  Future<SyncResult> linkGoogle(String firebaseIdToken) async {
+    try {
+      final response = await _authedDio().post(
+        '/user/link-google',
+        data: {'googleIdToken': firebaseIdToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        await _tokenStorage.saveTokens(
+          accessToken: data['accessToken'] as String,
+          refreshToken: data['refreshToken'] as String,
+        );
+        if (data['user'] != null) {
+          _currentUser = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+        }
+        debugPrint('🔐 ✅ Google linked successfully');
+        return SyncResult.success;
+      }
+      return SyncResult.error;
+    } catch (e) {
+      debugPrint('🔐 ❌ Link Google error: $e');
+      return SyncResult.error;
+    }
+  }
+
+  // ─── Switch to existing Google account ─────────────────────────
+
+  /// Switch to an EXISTING Google-linked account.
+  /// Abandons current account and logs into the target account.
+  Future<SyncResult> switchToGoogleAccount(String firebaseIdToken) async {
+    try {
+      final response = await _authedDio().post(
+        '/user/switch-to-google',
+        data: {'googleIdToken': firebaseIdToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        await _tokenStorage.saveTokens(
+          accessToken: data['accessToken'] as String,
+          refreshToken: data['refreshToken'] as String,
+        );
+        if (data['user'] != null) {
+          _currentUser = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+        }
+        debugPrint('🔐 ✅ Switched to Google account');
+        return SyncResult.success;
+      }
+      return SyncResult.error;
+    } catch (e) {
+      debugPrint('🔐 ❌ Switch to Google error: $e');
+      return SyncResult.error;
+    }
+  }
+
+  // ─── Create new account with Google ────────────────────────────
+
+  /// Create a brand new INDEPENDENT account using Google info.
+  /// The old account stays as-is. This creates a completely separate account.
+  Future<SyncResult> createWithGoogle(String firebaseIdToken) async {
+    try {
+      final response = await _authedDio().post(
+        '/user/create-with-google',
+        data: {'googleIdToken': firebaseIdToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        await _tokenStorage.saveTokens(
+          accessToken: data['accessToken'] as String,
+          refreshToken: data['refreshToken'] as String,
+        );
+        if (data['user'] != null) {
+          _currentUser = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+        }
+        debugPrint('🔐 ✅ Created new account with Google');
+        return SyncResult.success;
+      }
+      return SyncResult.error;
+    } catch (e) {
+      debugPrint('🔐 ❌ Create with Google error: $e');
+      return SyncResult.error;
+    }
+  }
+
+  // ─── Token Management ──────────────────────────────────────────
 
   /// Refresh app JWT tokens using the stored refresh token.
   Future<bool> refreshTokens() async {
@@ -92,19 +261,7 @@ class AuthRepository {
       final refreshToken = await _tokenStorage.getRefreshToken();
       if (refreshToken == null) return false;
 
-      final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
-      final rawDio = Dio()
-        ..options = BaseOptions(
-          baseUrl: dio.options.baseUrl,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': _apiKey,
-          },
-        );
-
-      final response = await rawDio.post(
+      final response = await _rawDio().post(
         '/user/refresh',
         data: {'refreshToken': refreshToken},
       );
@@ -124,100 +281,17 @@ class AuthRepository {
     return false;
   }
 
-  /// Sign in anonymously (for first-time users)
-  Future<UserCredential?> signInAnonymously() async {
+  /// Fetch current user info from backend
+  Future<AppUser?> fetchUserInfo() async {
     try {
-      final credential = await _firebaseAuth.signInAnonymously();
-      // Register with backend to get app JWT
-      await registerWithBackend();
-      return credential;
-    } catch (e) {
-      throw Exception('Failed to sign in anonymously: $e');
-    }
-  }
-
-  /// Link anonymous account with Google credential
-  Future<LinkResult> linkWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return LinkResult.cancelled;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final currentUser = _firebaseAuth.currentUser;
-      if (currentUser != null && currentUser.isAnonymous) {
-        await currentUser.linkWithCredential(credential);
-        // Re-register with backend (now has email)
-        await registerWithBackend();
-        return LinkResult.success;
-      } else {
-        await _firebaseAuth.signInWithCredential(credential);
-        await registerWithBackend();
-        return LinkResult.success;
+      final response = await _authedDio().get('/user/me');
+      if (response.statusCode == 200) {
+        _currentUser = AppUser.fromJson(response.data as Map<String, dynamic>);
+        return _currentUser;
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'credential-already-in-use' || e.code == 'provider-already-linked') {
-        return LinkResult.credentialAlreadyInUse;
-      }
-      throw Exception('Failed to link with Google: $e');
     } catch (e) {
-      throw Exception('Failed to link with Google: $e');
+      debugPrint('🔐 ❌ Fetch user info error: $e');
     }
-  }
-
-  /// Sign in directly with Google (for loading existing data)
-  Future<UserCredential?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      final OAuthCredential credentialObj = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign out current anonymous user first
-      await _firebaseAuth.signOut();
-      await _tokenStorage.clearTokens();
-
-      final credential = await _firebaseAuth.signInWithCredential(credentialObj);
-
-      // Register with backend
-      await registerWithBackend();
-
-      return credential;
-    } catch (e) {
-      throw Exception('Failed to sign in with Google: $e');
-    }
-  }
-
-  /// Use a different Google account (for account conflict resolution)
-  Future<LinkResult> linkWithDifferentGoogle() async {
-    await _googleSignIn.signOut();
-    return linkWithGoogle();
-  }
-
-  Future<void> signOut() async {
-    try {
-      await Future.wait([
-        _firebaseAuth.signOut(),
-        _googleSignIn.signOut(),
-        _tokenStorage.clearTokens(),
-      ]);
-      // Clear local data from previous account
-      await SavedLessonsRepository().clearLocal();
-      // After sign out, sign in anonymously again so user can still use the app
-      await _firebaseAuth.signInAnonymously();
-      await registerWithBackend();
-    } catch (e) {
-      throw Exception('Failed to sign out: $e');
-    }
+    return null;
   }
 }

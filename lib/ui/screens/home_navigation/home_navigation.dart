@@ -139,15 +139,17 @@ class _HomeNavigationState extends State<HomeNavigation> {
   @override
   void initState() {
     super.initState();
-    final notificationsBloc = context.read<NotificationsBloc>();
-    notificationsBloc.add(const NotificationsEvent.requestPermissions());
-    notificationsBloc.add(const NotificationsEvent.handleOpenAppFromNotification());
+    context.read<NotificationsBloc>().add(const NotificationsEvent.requestPermissions());
+    context.read<NotificationsBloc>().add(const NotificationsEvent.handleOpenAppFromNotification());
     context.read<StreakBloc>().add(const StreakEvent.watchStreak());
     context.read<VocabularyBloc>().add(const VocabularyEvent.getAllOxfordWords());
     _appLifecycleListener = AppLifecycleListener(
       onShow: () {
         debugPrint('NotificationsScreen: onShow');
-        notificationsBloc.add(const NotificationsEvent.requestPermissions());
+        // Use mounted check + context.read to always get the current bloc instance
+        if (mounted) {
+          context.read<NotificationsBloc>().add(const NotificationsEvent.requestPermissions());
+        }
       },
     );
   }

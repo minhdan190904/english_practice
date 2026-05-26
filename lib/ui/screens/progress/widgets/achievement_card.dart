@@ -28,7 +28,7 @@ class AchievementCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: unlocked ? Colors.white : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
@@ -52,34 +52,38 @@ class AchievementCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Icon with optional lock overlay
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Text(
-                  definition.icon,
-                  style: TextStyle(
-                    fontSize: 32,
-                    color: unlocked ? null : Colors.grey,
-                  ),
-                ),
-                if (!unlocked)
-                  Positioned(
-                    right: -2,
-                    bottom: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.lock,
-                        size: 12,
-                        color: Colors.white,
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  FittedBox(
+                    child: Text(
+                      definition.icon,
+                      style: TextStyle(
+                        fontSize: 32,
+                        color: unlocked ? null : Colors.grey,
                       ),
                     ),
                   ),
-              ],
+                  if (!unlocked)
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lock,
+                          size: 10,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
 

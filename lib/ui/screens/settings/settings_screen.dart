@@ -20,10 +20,10 @@ import 'bloc/settings_bloc.dart';
 import 'widgets/profile_field.dart';
 import 'widgets/theme_item.dart';
 import '../../../utils/l10n.dart';
+import '../../../navigation/app_router.dart';
 
 import '../../../data/repositories/auth_repository.dart';
 import '../../blocs/auth/auth_cubit.dart';
-import '../../blocs/auth/auth_state.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -80,63 +80,184 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 16),
-                            if (authState.user != null && !authState.user!.isAnonymous)
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 30,
-                                    backgroundImage: authState.user?.photoURL != null
-                                        ? NetworkImage(authState.user!.photoURL!)
-                                        : null,
-                                    child: authState.user?.photoURL == null
-                                        ? const Icon(Icons.person, size: 30)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          authState.user?.displayName ?? 'No Name',
-                                          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          authState.user?.email ?? '',
-                                          style: textTheme.bodyMedium,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.logout),
-                                    onPressed: () {
-                                      context.read<AuthCubit>().signOut();
-                                    },
-                                  )
-                                ],
-                              )
-                            else
-                              RoundedButton(
-                                onPressed: authState.isLoading
-                                    ? null
-                                    : () => _onSyncWithGoogle(context),
-                                borderRadius: 16,
-                                child: authState.isLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.sync),
-                                          const SizedBox(width: 8),
-                                          Text(L10n.tr(context, "sync_with_google")),
-                                        ],
-                                      ),
+                            // ─── Profile Card ───────────────────────
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.primaryContainer.withValues(alpha: 0.5),
+                                    colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: colorScheme.outline.withValues(alpha: 0.12),
+                                ),
                               ),
+                              child: Column(
+                                children: [
+                                  // Avatar + Info + ID Badge
+                                  Row(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: colorScheme.primary.withValues(alpha: 0.3),
+                                            width: 2.5,
+                                          ),
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 28,
+                                          backgroundColor: colorScheme.surfaceContainerHighest,
+                                          backgroundImage: authState.user?.avatarUrl != null
+                                              ? NetworkImage(authState.user!.avatarUrl!)
+                                              : null,
+                                          child: authState.user?.avatarUrl == null
+                                              ? Icon(Icons.person_rounded, size: 28, color: colorScheme.onSurfaceVariant)
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (authState.hasGoogleLinked && authState.user != null) ...[
+                                              Text(
+                                                authState.user?.displayName ?? 'User',
+                                                style: textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                authState.user?.email ?? '',
+                                                style: textTheme.bodySmall?.copyWith(
+                                                  color: colorScheme.onSurfaceVariant,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ] else ...[
+                                              Text(
+                                                L10n.tr(context, 'guest_account'),
+                                                style: textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                L10n.tr(context, 'not_synced'),
+                                                style: textTheme.bodySmall?.copyWith(
+                                                  color: colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      // ID Badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primary.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          'ID: ${authState.user?.id ?? "..."}',
+                                          style: textTheme.labelMedium?.copyWith(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  // ─── Action Buttons ───
+                                  if (!authState.hasGoogleLinked) ...[
+                                    // NOT linked → 2 buttons: "Liên kết Google" + "Chuyển tài khoản"
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 44,
+                                      child: FilledButton.icon(
+                                        onPressed: authState.isLoading
+                                            ? null
+                                            : () => _onLinkGoogle(context),
+                                        icon: authState.isLoading
+                                            ? const SizedBox(
+                                                width: 18, height: 18,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                              )
+                                            : SvgPicture.asset(
+                                                'assets/svg/google.svg',
+                                                width: 18,
+                                                height: 18,
+                                              ),
+                                        label: Text(
+                                          L10n.tr(context, 'link_google'),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                        style: FilledButton.styleFrom(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 44,
+                                      child: OutlinedButton.icon(
+                                        onPressed: authState.isLoading
+                                            ? null
+                                            : () => _onSwitchAccount(context),
+                                        icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+                                        label: Text(
+                                          L10n.tr(context, 'switch_account'),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                                        ),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    // LINKED → 1 button: "Chuyển tài khoản"
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 44,
+                                      child: OutlinedButton.icon(
+                                        onPressed: authState.isLoading
+                                            ? null
+                                            : () => _onSwitchAccount(context),
+                                        icon: authState.isLoading
+                                            ? const SizedBox(
+                                                width: 18, height: 18,
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              )
+                                            : const Icon(Icons.swap_horiz_rounded, size: 20),
+                                        label: Text(
+                                          L10n.tr(context, 'switch_account'),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 24),
                             VocabularyItem(
                               word: Words.sampleWord,
@@ -412,62 +533,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _onSyncWithGoogle(BuildContext context) async {
+  /// "Liên kết Google" — attaches Google to CURRENT account (keeps same ID)
+  Future<void> _onLinkGoogle(BuildContext context) async {
     final authCubit = context.read<AuthCubit>();
-    final result = await authCubit.linkWithGoogle();
 
-    if (!context.mounted) return;
+    // Step 1: Google Sign-In → get Firebase ID token
+    final firebaseIdToken = await authCubit.getFirebaseIdToken();
+    if (firebaseIdToken == null || !context.mounted) return;
 
-    switch (result) {
-      case LinkResult.success:
-        _navigateHomeWithSuccess(context, L10n.tr(context, "sync_success"));
-        break;
-      case LinkResult.credentialAlreadyInUse:
-        _showAccountConflictDialog(context);
-        break;
-      case LinkResult.cancelled:
-        break;
-      case LinkResult.error:
+    // Step 2: Check if Google account already exists on backend
+    final checkResult = await authCubit.checkGoogle(firebaseIdToken);
+    if (checkResult == null || !context.mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authCubit.state.errorMessage ?? L10n.tr(context, "sync_error")),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Lỗi kết nối. Vui lòng thử lại.'), backgroundColor: Colors.red),
         );
-        break;
+      }
+      return;
+    }
+
+    if (!checkResult.exists) {
+      // Google is new → link it to current account directly
+      final result = await authCubit.linkGoogle(firebaseIdToken);
+      if (!context.mounted) return;
+      if (result == SyncResult.success) {
+        context.go(RoutePaths.postAuth, extra: {'mode': 'login'});
+      }
+    } else {
+      // Google already linked to another account → show conflict dialog
+      _showLinkConflictDialog(context, firebaseIdToken, checkResult);
     }
   }
 
-  /// Navigate to home (Vocabulary tab) and show success snackbar
-  void _navigateHomeWithSuccess(BuildContext context, String message) {
-    // Navigate to vocabulary (home tab)
-    context.go('/vocabulary');
+  /// "Chuyển tài khoản" — switch to a DIFFERENT account via Google
+  /// If Google exists on server → login as that account
+  /// If Google is new → create a brand new independent account
+  Future<void> _onSwitchAccount(BuildContext context) async {
+    final authCubit = context.read<AuthCubit>();
 
-    // Show success snackbar after navigation
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Expanded(child: Text(message)),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    });
+    // Force new account picker
+    final firebaseIdToken = await authCubit.getFirebaseIdToken(forceNewAccount: true);
+    if (firebaseIdToken == null || !context.mounted) return;
+
+    // Check if this Google account exists on backend
+    final checkResult = await authCubit.checkGoogle(firebaseIdToken);
+    if (checkResult == null || !context.mounted) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lỗi kết nối. Vui lòng thử lại.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    if (checkResult.exists) {
+      // Google already linked to an account → switch to it
+      _showSwitchConfirmDialog(context, firebaseIdToken, checkResult);
+    } else {
+      // Google is new → create a new independent account
+      _showCreateNewAccountDialog(context, firebaseIdToken);
+    }
   }
 
-  void _showAccountConflictDialog(BuildContext context) {
+  /// Conflict dialog: user tried to "Liên kết" but Google is already used
+  void _showLinkConflictDialog(BuildContext context, String firebaseIdToken, CheckGoogleResult checkResult) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isVi = context.read<SettingsBloc>().state.settingsSnapshot.locale == 'vi';
 
     showDialog(
       context: context,
@@ -475,69 +607,262 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.cloud_download, color: colorScheme.primary),
+            Icon(Icons.warning_amber_rounded, color: colorScheme.error),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                L10n.tr(context, "account_conflict_title"),
+                isVi ? 'Google đã được sử dụng' : 'Google Already Used',
                 style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        content: Text(
-          L10n.tr(context, "account_conflict_message"),
-          style: textTheme.bodyMedium,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isVi
+                  ? 'Tài khoản Google này đã được liên kết với tài khoản khác:'
+                  : 'This Google account is already linked to another account:',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            _buildUserInfoCard(context, checkResult),
+          ],
         ),
         actions: [
-          // Option 1: Load existing data
+          // Option 1: Switch to that account
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
                 final authCubit = context.read<AuthCubit>();
-                final success = await authCubit.signInWithGoogle();
-                if (context.mounted && success) {
-                  _navigateHomeWithSuccess(context, L10n.tr(context, "sync_success"));
+                final result = await authCubit.switchToGoogleAccount(firebaseIdToken);
+                if (!context.mounted) return;
+                if (result == SyncResult.success) {
+                  context.go(RoutePaths.postAuth, extra: {'mode': 'login'});
                 }
               },
-              icon: const Icon(Icons.cloud_download),
-              label: Text(L10n.tr(context, "load_existing_data")),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
+              icon: const Icon(Icons.login_rounded),
+              label: Text(isVi ? 'Đăng nhập tài khoản này' : 'Login to this account'),
+              style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          // Option 2: Use different Gmail
+          // Option 2: Pick a different Google
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.of(dialogContext).pop();
-                final authCubit = context.read<AuthCubit>();
-                final result = await authCubit.linkWithDifferentGoogle();
-                if (context.mounted && result == LinkResult.credentialAlreadyInUse) {
-                  _showAccountConflictDialog(context);
-                }
+                if (context.mounted) _onLinkGoogle(context);
               },
-              icon: const Icon(Icons.switch_account),
-              label: Text(L10n.tr(context, "use_different_gmail")),
+              icon: const Icon(Icons.swap_horiz_rounded),
+              label: Text(isVi ? 'Chọn Google khác' : 'Choose different Google'),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          // Option 3: Cancel
           SizedBox(
             width: double.infinity,
             child: TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(L10n.tr(context, "go_back")),
+              child: Text(isVi ? 'Hủy' : 'Cancel'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Confirm switching to an existing account
+  void _showSwitchConfirmDialog(BuildContext context, String firebaseIdToken, CheckGoogleResult checkResult) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isVi = context.read<SettingsBloc>().state.settingsSnapshot.locale == 'vi';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.swap_horiz_rounded, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isVi ? 'Chuyển tài khoản' : 'Switch Account',
+                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isVi
+                  ? 'Bạn sẽ đăng nhập vào tài khoản:'
+                  : 'You will login to this account:',
+              style: textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            _buildUserInfoCard(context, checkResult),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final authCubit = context.read<AuthCubit>();
+                final result = await authCubit.switchToGoogleAccount(firebaseIdToken);
+                if (!context.mounted) return;
+                if (result == SyncResult.success) {
+                  context.go(RoutePaths.postAuth, extra: {'mode': 'login'});
+                }
+              },
+              icon: const Icon(Icons.login_rounded),
+              label: Text(isVi ? 'Đăng nhập' : 'Login'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Choose different
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                if (!context.mounted) return;
+                _onSwitchAccount(context);
+              },
+              icon: const Icon(Icons.switch_account_rounded),
+              label: Text(isVi ? 'Chọn tài khoản khác' : 'Choose different'),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(isVi ? 'Hủy' : 'Cancel'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Confirm creating a brand new account with this Google
+  void _showCreateNewAccountDialog(BuildContext context, String firebaseIdToken) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isVi = context.read<SettingsBloc>().state.settingsSnapshot.locale == 'vi';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.person_add_rounded, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isVi ? 'Tạo tài khoản mới' : 'Create New Account',
+                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          isVi
+              ? 'Tài khoản Google này chưa tồn tại. Hệ thống sẽ tạo một tài khoản mới hoàn toàn riêng biệt.'
+              : 'This Google account doesn\'t exist yet. A new independent account will be created.',
+          style: textTheme.bodyMedium,
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final authCubit = context.read<AuthCubit>();
+                final result = await authCubit.createWithGoogle(firebaseIdToken);
+                if (!context.mounted) return;
+                if (result == SyncResult.success) {
+                  context.go(RoutePaths.postAuth, extra: {'mode': 'login'});
+                }
+              },
+              icon: const Icon(Icons.add_circle_rounded),
+              label: Text(isVi ? 'Tạo tài khoản' : 'Create account'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(isVi ? 'Hủy' : 'Cancel'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reusable user info card for dialogs
+  Widget _buildUserInfoCard(BuildContext context, CheckGoogleResult checkResult) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: checkResult.existingAvatarUrl != null
+                ? NetworkImage(checkResult.existingAvatarUrl!)
+                : null,
+            child: checkResult.existingAvatarUrl == null
+                ? const Icon(Icons.person, size: 20)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  checkResult.existingDisplayName ?? 'User',
+                  style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${checkResult.existingEmail ?? ''} • ID: ${checkResult.existingUserId ?? ''}',
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
           ),
         ],
