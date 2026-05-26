@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
 import '../../../utils/global_values.dart';
+import '../../../configs/di.dart';
+import 'package:just_audio/just_audio.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
 import '../settings/bloc/settings_bloc.dart';
 import 'widgets/flashcard_app_dialog.dart';
@@ -26,7 +28,7 @@ class FlashCardScreen extends StatefulWidget {
 
 class _FlashCardScreenState extends State<FlashCardScreen>
     with SingleTickerProviderStateMixin {
-  // ── word list ────────────────────────────────────────────────────────────
+  // ── word list ──────────────────────────────────────────────────────────────
   late List<Word> _remainingWords;
   late List<Word> _dontKnowWords;
   int _currentIndex = 0;
@@ -52,9 +54,12 @@ class _FlashCardScreenState extends State<FlashCardScreen>
   @override
   void initState() {
     super.initState();
-    _remainingWords = List.from(widget.words);
+    // Filter out already-mastered words
+    _remainingWords = widget.words
+        .where((w) => w.status != WordStatus.mastered)
+        .toList();
     _dontKnowWords = [];
-    _totalWords = widget.words.length;
+    _totalWords = _remainingWords.length;
 
     _flipController = AnimationController(
       vsync: this,
@@ -139,6 +144,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       _flipCard();
       return;
     }
+    // Mark word as MASTERED — removes from SRS and syncs to backend
     context.read<VocabularyBloc>().add(
           VocabularyEvent.changeStatus(_currentWord, WordStatus.mastered),
         );
@@ -172,6 +178,9 @@ class _FlashCardScreenState extends State<FlashCardScreen>
       _flipCard();
       return;
     }
+    context.read<VocabularyBloc>().add(
+          VocabularyEvent.recordSrsReview(wordIndex: _currentWord.index, correct: false),
+        );
     _resetFlipInstant();
     setState(() {
       _slideDirection = 1;
@@ -409,6 +418,23 @@ class _FlipCard extends StatelessWidget {
   }
 }
 
+// ── FlashCard Audio Helper ───────────────────────────────────────────────────
+final Map<String, LockCachingAudioSource> _flashCardAudioCache = {};
+
+void _playFlashCardAudio(String url) async {
+  if (url.isEmpty) return;
+  try {
+    final player = DI().sl<AudioPlayer>();
+    if (!_flashCardAudioCache.containsKey(url)) {
+      _flashCardAudioCache[url] = LockCachingAudioSource(Uri.parse(url));
+    }
+    await player.setAudioSource(_flashCardAudioCache[url]!);
+    await player.play();
+  } catch (e) {
+    debugPrint('Error playing audio: $e');
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Front Card
 // ─────────────────────────────────────────────────────────────────────────────
@@ -465,30 +491,33 @@ class _FrontCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             if (word.phoneticText.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(18),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                      color: colorScheme.primary.withAlpha(40), width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.volume_up_rounded,
-                        size: 16, color: colorScheme.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      word.phoneticText,
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontSize: 15,
-                        fontStyle: FontStyle.italic,
+              GestureDetector(
+                onTap: () => _playFlashCardAudio(word.phonetic),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withAlpha(18),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                        color: colorScheme.primary.withAlpha(40), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.volume_up_rounded,
+                          size: 16, color: colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        word.phoneticText,
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontSize: 15,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             const SizedBox(height: 32),

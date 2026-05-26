@@ -6,4 +6,5 @@ class VocabularyEvent with _$VocabularyEvent {
   const factory VocabularyEvent.changeStatus(Word word, WordStatus status) = _ChangeStatus;
   const factory VocabularyEvent.editDefinition(Word word, String? newDefinition) = _EditDefinition;
   const factory VocabularyEvent.addWordRandomly() = _AddWordRandomly;
+  const factory VocabularyEvent.recordSrsReview({required int wordIndex, required bool correct}) = _RecordSrsReview;
 }

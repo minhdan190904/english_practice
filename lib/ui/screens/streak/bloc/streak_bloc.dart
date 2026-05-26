@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../data/repositories/streak_repository.dart';
 import '../../../../data/repositories/progress_repository.dart';
+import '../../../../utils/achievement_checker.dart';
 
 part 'streak_event.dart';
 
@@ -16,6 +17,7 @@ part 'generated/streak_bloc.freezed.dart';
 class StreakBloc extends Bloc<StreakEvent, StreakState> {
   final StreakRepository _streakRepository;
   final ProgressRepository _progressRepository;
+  final AchievementChecker _achievementChecker;
   static const int timePerDayNeeded = 60 * 5; // 5 minutes
 
   Timer? _streakTimer;
@@ -23,8 +25,10 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
   StreakBloc({
     required StreakRepository streakRepository,
     required ProgressRepository progressRepository,
+    required AchievementChecker achievementChecker,
   })  : _streakRepository = streakRepository,
         _progressRepository = progressRepository,
+        _achievementChecker = achievementChecker,
         super(const StreakState()) {
     on<StreakEvent>((event, emit) async {
       await event.map(
@@ -68,6 +72,7 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
           longestStreak: newLongestStreak,
         )));
         _streakRepository.setStreak(newStreak);
+        _achievementChecker.checkStreakAchievements(newStreak);
         
         // Sync streak to server
         _streakRepository.checkInWithServer();

@@ -22,6 +22,7 @@ mixin _$VocabularyEvent {
     required TResult Function(Word word, WordStatus status) changeStatus,
     required TResult Function(Word word, String? newDefinition) editDefinition,
     required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -30,6 +31,7 @@ mixin _$VocabularyEvent {
     TResult? Function(Word word, WordStatus status)? changeStatus,
     TResult? Function(Word word, String? newDefinition)? editDefinition,
     TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -38,6 +40,7 @@ mixin _$VocabularyEvent {
     TResult Function(Word word, WordStatus status)? changeStatus,
     TResult Function(Word word, String? newDefinition)? editDefinition,
     TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -47,6 +50,7 @@ mixin _$VocabularyEvent {
     required TResult Function(_ChangeStatus value) changeStatus,
     required TResult Function(_EditDefinition value) editDefinition,
     required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -55,6 +59,7 @@ mixin _$VocabularyEvent {
     TResult? Function(_ChangeStatus value)? changeStatus,
     TResult? Function(_EditDefinition value)? editDefinition,
     TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -63,6 +68,7 @@ mixin _$VocabularyEvent {
     TResult Function(_ChangeStatus value)? changeStatus,
     TResult Function(_EditDefinition value)? editDefinition,
     TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -128,6 +134,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     required TResult Function(Word word, WordStatus status) changeStatus,
     required TResult Function(Word word, String? newDefinition) editDefinition,
     required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
   }) {
     return getAllOxfordWords();
   }
@@ -139,6 +146,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     TResult? Function(Word word, WordStatus status)? changeStatus,
     TResult? Function(Word word, String? newDefinition)? editDefinition,
     TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
   }) {
     return getAllOxfordWords?.call();
   }
@@ -150,6 +158,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     TResult Function(Word word, WordStatus status)? changeStatus,
     TResult Function(Word word, String? newDefinition)? editDefinition,
     TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (getAllOxfordWords != null) {
@@ -165,6 +174,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     required TResult Function(_ChangeStatus value) changeStatus,
     required TResult Function(_EditDefinition value) editDefinition,
     required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
   }) {
     return getAllOxfordWords(this);
   }
@@ -176,6 +186,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     TResult? Function(_ChangeStatus value)? changeStatus,
     TResult? Function(_EditDefinition value)? editDefinition,
     TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
   }) {
     return getAllOxfordWords?.call(this);
   }
@@ -187,6 +198,7 @@ class _$GetAllOxfordWordsImpl implements _GetAllOxfordWords {
     TResult Function(_ChangeStatus value)? changeStatus,
     TResult Function(_EditDefinition value)? editDefinition,
     TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (getAllOxfordWords != null) {
@@ -286,6 +298,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     required TResult Function(Word word, WordStatus status) changeStatus,
     required TResult Function(Word word, String? newDefinition) editDefinition,
     required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
   }) {
     return changeStatus(word, status);
   }
@@ -297,6 +310,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     TResult? Function(Word word, WordStatus status)? changeStatus,
     TResult? Function(Word word, String? newDefinition)? editDefinition,
     TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
   }) {
     return changeStatus?.call(word, status);
   }
@@ -308,6 +322,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     TResult Function(Word word, WordStatus status)? changeStatus,
     TResult Function(Word word, String? newDefinition)? editDefinition,
     TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (changeStatus != null) {
@@ -323,6 +338,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     required TResult Function(_ChangeStatus value) changeStatus,
     required TResult Function(_EditDefinition value) editDefinition,
     required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
   }) {
     return changeStatus(this);
   }
@@ -334,6 +350,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     TResult? Function(_ChangeStatus value)? changeStatus,
     TResult? Function(_EditDefinition value)? editDefinition,
     TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
   }) {
     return changeStatus?.call(this);
   }
@@ -345,6 +362,7 @@ class _$ChangeStatusImpl implements _ChangeStatus {
     TResult Function(_ChangeStatus value)? changeStatus,
     TResult Function(_EditDefinition value)? editDefinition,
     TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (changeStatus != null) {
@@ -453,6 +471,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     required TResult Function(Word word, WordStatus status) changeStatus,
     required TResult Function(Word word, String? newDefinition) editDefinition,
     required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
   }) {
     return editDefinition(word, newDefinition);
   }
@@ -464,6 +483,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     TResult? Function(Word word, WordStatus status)? changeStatus,
     TResult? Function(Word word, String? newDefinition)? editDefinition,
     TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
   }) {
     return editDefinition?.call(word, newDefinition);
   }
@@ -475,6 +495,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     TResult Function(Word word, WordStatus status)? changeStatus,
     TResult Function(Word word, String? newDefinition)? editDefinition,
     TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (editDefinition != null) {
@@ -490,6 +511,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     required TResult Function(_ChangeStatus value) changeStatus,
     required TResult Function(_EditDefinition value) editDefinition,
     required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
   }) {
     return editDefinition(this);
   }
@@ -501,6 +523,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     TResult? Function(_ChangeStatus value)? changeStatus,
     TResult? Function(_EditDefinition value)? editDefinition,
     TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
   }) {
     return editDefinition?.call(this);
   }
@@ -512,6 +535,7 @@ class _$EditDefinitionImpl implements _EditDefinition {
     TResult Function(_ChangeStatus value)? changeStatus,
     TResult Function(_EditDefinition value)? editDefinition,
     TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (editDefinition != null) {
@@ -574,6 +598,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     required TResult Function(Word word, WordStatus status) changeStatus,
     required TResult Function(Word word, String? newDefinition) editDefinition,
     required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
   }) {
     return addWordRandomly();
   }
@@ -585,6 +610,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     TResult? Function(Word word, WordStatus status)? changeStatus,
     TResult? Function(Word word, String? newDefinition)? editDefinition,
     TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
   }) {
     return addWordRandomly?.call();
   }
@@ -596,6 +622,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     TResult Function(Word word, WordStatus status)? changeStatus,
     TResult Function(Word word, String? newDefinition)? editDefinition,
     TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (addWordRandomly != null) {
@@ -611,6 +638,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     required TResult Function(_ChangeStatus value) changeStatus,
     required TResult Function(_EditDefinition value) editDefinition,
     required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
   }) {
     return addWordRandomly(this);
   }
@@ -622,6 +650,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     TResult? Function(_ChangeStatus value)? changeStatus,
     TResult? Function(_EditDefinition value)? editDefinition,
     TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
   }) {
     return addWordRandomly?.call(this);
   }
@@ -633,6 +662,7 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
     TResult Function(_ChangeStatus value)? changeStatus,
     TResult Function(_EditDefinition value)? editDefinition,
     TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
     required TResult orElse(),
   }) {
     if (addWordRandomly != null) {
@@ -644,6 +674,171 @@ class _$AddWordRandomlyImpl implements _AddWordRandomly {
 
 abstract class _AddWordRandomly implements VocabularyEvent {
   const factory _AddWordRandomly() = _$AddWordRandomlyImpl;
+}
+
+/// @nodoc
+abstract class _$$RecordSrsReviewImplCopyWith<$Res> {
+  factory _$$RecordSrsReviewImplCopyWith(_$RecordSrsReviewImpl value,
+          $Res Function(_$RecordSrsReviewImpl) then) =
+      __$$RecordSrsReviewImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({int wordIndex, bool correct});
+}
+
+/// @nodoc
+class __$$RecordSrsReviewImplCopyWithImpl<$Res>
+    extends _$VocabularyEventCopyWithImpl<$Res, _$RecordSrsReviewImpl>
+    implements _$$RecordSrsReviewImplCopyWith<$Res> {
+  __$$RecordSrsReviewImplCopyWithImpl(
+      _$RecordSrsReviewImpl _value, $Res Function(_$RecordSrsReviewImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? wordIndex = null,
+    Object? correct = null,
+  }) {
+    return _then(_$RecordSrsReviewImpl(
+      wordIndex: null == wordIndex
+          ? _value.wordIndex
+          : wordIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      correct: null == correct
+          ? _value.correct
+          : correct // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$RecordSrsReviewImpl implements _RecordSrsReview {
+  const _$RecordSrsReviewImpl(
+      {required this.wordIndex, required this.correct});
+
+  @override
+  final int wordIndex;
+  @override
+  final bool correct;
+
+  @override
+  String toString() {
+    return 'VocabularyEvent.recordSrsReview(wordIndex: $wordIndex, correct: $correct)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RecordSrsReviewImpl &&
+            (identical(other.wordIndex, wordIndex) ||
+                other.wordIndex == wordIndex) &&
+            (identical(other.correct, correct) || other.correct == correct));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, wordIndex, correct);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RecordSrsReviewImplCopyWith<_$RecordSrsReviewImpl> get copyWith =>
+      __$$RecordSrsReviewImplCopyWithImpl<_$RecordSrsReviewImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() getAllOxfordWords,
+    required TResult Function(Word word, WordStatus status) changeStatus,
+    required TResult Function(Word word, String? newDefinition) editDefinition,
+    required TResult Function() addWordRandomly,
+    required TResult Function(int wordIndex, bool correct) recordSrsReview,
+  }) {
+    return recordSrsReview(wordIndex, correct);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? getAllOxfordWords,
+    TResult? Function(Word word, WordStatus status)? changeStatus,
+    TResult? Function(Word word, String? newDefinition)? editDefinition,
+    TResult? Function()? addWordRandomly,
+    TResult? Function(int wordIndex, bool correct)? recordSrsReview,
+  }) {
+    return recordSrsReview?.call(wordIndex, correct);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? getAllOxfordWords,
+    TResult Function(Word word, WordStatus status)? changeStatus,
+    TResult Function(Word word, String? newDefinition)? editDefinition,
+    TResult Function()? addWordRandomly,
+    TResult Function(int wordIndex, bool correct)? recordSrsReview,
+    required TResult orElse(),
+  }) {
+    if (recordSrsReview != null) {
+      return recordSrsReview(wordIndex, correct);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_GetAllOxfordWords value) getAllOxfordWords,
+    required TResult Function(_ChangeStatus value) changeStatus,
+    required TResult Function(_EditDefinition value) editDefinition,
+    required TResult Function(_AddWordRandomly value) addWordRandomly,
+    required TResult Function(_RecordSrsReview value) recordSrsReview,
+  }) {
+    return recordSrsReview(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_GetAllOxfordWords value)? getAllOxfordWords,
+    TResult? Function(_ChangeStatus value)? changeStatus,
+    TResult? Function(_EditDefinition value)? editDefinition,
+    TResult? Function(_AddWordRandomly value)? addWordRandomly,
+    TResult? Function(_RecordSrsReview value)? recordSrsReview,
+  }) {
+    return recordSrsReview?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_GetAllOxfordWords value)? getAllOxfordWords,
+    TResult Function(_ChangeStatus value)? changeStatus,
+    TResult Function(_EditDefinition value)? editDefinition,
+    TResult Function(_AddWordRandomly value)? addWordRandomly,
+    TResult Function(_RecordSrsReview value)? recordSrsReview,
+    required TResult orElse(),
+  }) {
+    if (recordSrsReview != null) {
+      return recordSrsReview(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _RecordSrsReview implements VocabularyEvent {
+  const factory _RecordSrsReview(
+      {required final int wordIndex,
+      required final bool correct}) = _$RecordSrsReviewImpl;
+
+  int get wordIndex;
+  bool get correct;
+  @JsonKey(ignore: true)
+  _$$RecordSrsReviewImplCopyWith<_$RecordSrsReviewImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc

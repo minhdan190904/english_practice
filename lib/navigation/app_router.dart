@@ -30,6 +30,7 @@ import '../ui/screens/vocabulary/vocabulary_screen.dart';
 import '../ui/screens/vocabulary/word_details_screen.dart';
 import '../ui/screens/ai_lesson/ai_lesson_screen.dart';
 import '../ui/screens/typing/typing_challenge_screen.dart';
+import '../ui/screens/practice/practice_screen.dart';
 
 part 'route_paths.dart';
 
@@ -108,6 +109,15 @@ class AppRouter {
                 final words = extra?['words'] as List<Word>? ?? [];
                 final title = extra?['title'] as String?;
                 return SwipeablePage(key: state.pageKey, builder: (context) => TypingChallengeScreen(words: words, title: title));
+              },
+            ),
+            GoRoute(
+              path: RoutePaths.practice,
+              pageBuilder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                final words = extra?['words'] as List<Word>? ?? [];
+                final title = extra?['title'] as String?;
+                return SwipeablePage(key: state.pageKey, builder: (context) => PracticeScreen(words: words, title: title));
               },
             ),
           ]),

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../configs/di.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
+import '../../../utils/achievement_checker.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
 import 'widgets/quiz_question_card.dart';
 import 'widgets/quiz_result_screen.dart';
@@ -140,16 +142,28 @@ class _QuizScreenState extends State<QuizScreen> {
   void _onAnswer(String answer) {
     if (_answered) return;
     final isCorrect = answer == _questions[_current].correctAnswer;
+    final currentWord = _questions[_current].word;
     setState(() {
       _answered = true;
       _selectedAnswer = answer;
       if (isCorrect) _correct++;
       _results.add(isCorrect);
     });
+    context.read<VocabularyBloc>().add(
+      VocabularyEvent.recordSrsReview(
+        wordIndex: currentWord.index,
+        correct: isCorrect,
+      ),
+    );
   }
 
   void _onNext() {
     if (_current >= _questions.length - 1) {
+      // Check for perfect quiz achievement
+      if (_correct == _questions.length && _questions.length >= 5) {
+        final achievementChecker = DI().sl<AchievementChecker>();
+        achievementChecker.checkPerfectQuiz();
+      }
       // Show result
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(

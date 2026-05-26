@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../data/models/word.dart';
 import '../../../utils/l10n.dart';
+import '../vocabulary/bloc/vocabulary_bloc.dart';
 import '../../screens/settings/bloc/settings_bloc.dart';
 import 'widgets/hint_display.dart';
 import 'widgets/star_rating.dart';
@@ -27,6 +28,7 @@ class TypingChallengeScreen extends StatefulWidget {
 
 class _TypingChallengeScreenState extends State<TypingChallengeScreen>
     with SingleTickerProviderStateMixin {
+  late final List<Word> _words;
   int _currentIndex = 0;
   int _hintLevel = 0;
   int _maxStars = 3;
@@ -43,12 +45,13 @@ class _TypingChallengeScreenState extends State<TypingChallengeScreen>
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
 
-  Word get _currentWord => widget.words[_currentIndex];
+  Word get _currentWord => _words[_currentIndex];
   String get _answer => _currentWord.word.toLowerCase().trim();
 
   @override
   void initState() {
     super.initState();
+    _words = List.from(widget.words)..shuffle();
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -154,12 +157,18 @@ class _TypingChallengeScreenState extends State<TypingChallengeScreen>
       correct: correct,
       stars: stars,
     ));
+    context.read<VocabularyBloc>().add(
+      VocabularyEvent.recordSrsReview(
+        wordIndex: _currentWord.index,
+        correct: correct,
+      ),
+    );
   }
 
   void _advanceAfterDelay(int ms) {
     Future.delayed(Duration(milliseconds: ms), () {
       if (!mounted) return;
-      if (_currentIndex >= widget.words.length - 1) {
+      if (_currentIndex >= _words.length - 1) {
         // All done — show results
         _showResults();
       } else {
@@ -186,9 +195,9 @@ class _TypingChallengeScreenState extends State<TypingChallengeScreen>
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => TypingResultScreen(
-          total: widget.words.length,
+          total: _words.length,
           totalStars: totalStars,
-          maxPossibleStars: widget.words.length * 3,
+          maxPossibleStars: _words.length * 3,
           correctCount: correctCount,
           results: _results,
           onPracticeAgain: () {
@@ -211,7 +220,7 @@ class _TypingChallengeScreenState extends State<TypingChallengeScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final progress = ((_currentIndex + 1) / widget.words.length).clamp(0.0, 1.0);
+    final progress = ((_currentIndex + 1) / _words.length).clamp(0.0, 1.0);
     final bgColor = colorScheme.primary;
 
     return Scaffold(
@@ -244,7 +253,7 @@ class _TypingChallengeScreenState extends State<TypingChallengeScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${_currentIndex + 1} / ${widget.words.length}',
+                      '${_currentIndex + 1} / ${_words.length}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontWeight: FontWeight.w600,

@@ -17,7 +17,10 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'configs/di.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/data_sources/token_storage.dart';
 import 'data/models/saved_lesson.dart';
+import 'data/repositories/srs_repository.dart';
+import 'data/repositories/achievement_repository.dart';
 import 'data/repositories/oxford_words_repository.dart';
 import 'navigation/app_router.dart';
 import 'ui/blocs/iap/iap_bloc.dart';
@@ -28,6 +31,7 @@ import 'ui/screens/settings/bloc/settings_bloc.dart';
 import 'utils/ad/consent_manager.dart';
 import 'utils/global_values.dart';
 import 'utils/local_notifications_tools.dart';
+import 'ui/screens/vocabulary/bloc/vocabulary_bloc.dart';
 
 /// Get Android device ID (ANDROID_ID)
 Future<String> _getDeviceId() async {
@@ -99,13 +103,40 @@ void main() async {
 
   await runStep('OxfordWordsRepository.initData', () => DI().sl<OxfordWordsRepository>().initData());
 
-  // Register with backend using device ID (replaces Firebase anonymous auth)
-  await runStep('RegisterWithDeviceId', () async {
+  // Restore session or register with device ID
+  await runStep('RestoreOrRegisterSession', () async {
+    final authRepo = DI().sl<AuthRepository>();
+    final tokenStorage = DI().sl<TokenStorage>();
+
+    // Step 1: Check if we have existing tokens (from a previous Google login or device login)
+    final hasTokens = await tokenStorage.hasTokens();
+    if (hasTokens) {
+      // Try to use existing tokens — call /user/me
+      debugPrint('🔐 Found existing tokens, trying /user/me...');
+      final user = await authRepo.fetchUserInfo();
+      if (user != null) {
+        debugPrint('🔐 ✅ Restored session — user: ${user.id} (${user.email})');
+        DI().sl<AuthCubit>().setUser(user);
+        return; // Session restored successfully, skip device registration
+      }
+      // Tokens expired or invalid — try refresh
+      debugPrint('🔐 /user/me failed, trying token refresh...');
+      final refreshed = await authRepo.refreshTokens();
+      if (refreshed) {
+        final user = await authRepo.fetchUserInfo();
+        if (user != null) {
+          debugPrint('🔐 ✅ Restored session after refresh — user: ${user.id}');
+          DI().sl<AuthCubit>().setUser(user);
+          return;
+        }
+      }
+    }
+
+    // Step 2: No valid session — register with device ID (guest/anonymous)
+    debugPrint('🔐 No valid session, registering with device ID...');
     final deviceId = await _getDeviceId();
     debugPrint('Device ID: $deviceId');
-    final authRepo = DI().sl<AuthRepository>();
     final user = await authRepo.registerWithDeviceId(deviceId);
-    // Update AuthCubit with user info
     DI().sl<AuthCubit>().setUser(user);
   });
 
@@ -113,6 +144,20 @@ void main() async {
   runStep('SyncData', () async {
     final savedLessonsRepo = SavedLessonsRepository();
     await savedLessonsRepo.syncWithServer();
+
+    // Sync SRS data + word statuses from server → Hive
+    final srsRepo = DI().sl<SrsRepository>();
+    await srsRepo.syncWithServer();
+
+    // Refresh VocabularyBloc to pick up updated statuses from Hive
+    final vocabBloc = DI().sl<VocabularyBloc>();
+    if (!vocabBloc.isClosed) {
+      vocabBloc.refreshWordsFromHive();
+    }
+
+    // Sync achievements
+    final achievementRepo = DI().sl<AchievementRepository>();
+    await achievementRepo.syncWithServer();
   });
 
   if (appFlavor != 'production' || kDebugMode) {

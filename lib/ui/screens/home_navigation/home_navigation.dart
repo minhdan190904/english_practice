@@ -51,6 +51,32 @@ class HomeNavigation extends StatefulWidget {
 
 class _HomeNavigationState extends State<HomeNavigation> {
   late final AppLifecycleListener _appLifecycleListener;
+  bool _didInit = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInit) {
+      _didInit = true;
+      _initBlocs();
+    }
+  }
+
+  void _initBlocs() {
+    final notifBloc = context.read<NotificationsBloc>();
+    if (!notifBloc.isClosed) {
+      notifBloc.add(const NotificationsEvent.requestPermissions());
+      notifBloc.add(const NotificationsEvent.handleOpenAppFromNotification());
+    }
+    final streakBloc = context.read<StreakBloc>();
+    if (!streakBloc.isClosed) {
+      streakBloc.add(const StreakEvent.watchStreak());
+    }
+    final vocabBloc = context.read<VocabularyBloc>();
+    if (!vocabBloc.isClosed) {
+      vocabBloc.add(const VocabularyEvent.getAllOxfordWords());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,16 +165,15 @@ class _HomeNavigationState extends State<HomeNavigation> {
   @override
   void initState() {
     super.initState();
-    context.read<NotificationsBloc>().add(const NotificationsEvent.requestPermissions());
-    context.read<NotificationsBloc>().add(const NotificationsEvent.handleOpenAppFromNotification());
-    context.read<StreakBloc>().add(const StreakEvent.watchStreak());
-    context.read<VocabularyBloc>().add(const VocabularyEvent.getAllOxfordWords());
     _appLifecycleListener = AppLifecycleListener(
       onShow: () {
         debugPrint('NotificationsScreen: onShow');
         // Use mounted check + context.read to always get the current bloc instance
         if (mounted) {
-          context.read<NotificationsBloc>().add(const NotificationsEvent.requestPermissions());
+          final bloc = context.read<NotificationsBloc>();
+          if (!bloc.isClosed) {
+            bloc.add(const NotificationsEvent.requestPermissions());
+          }
         }
       },
     );

@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 
 /// Definition of a single achievement badge.
 class AchievementDef {
@@ -284,4 +287,153 @@ class AchievementRepository {
   int get perfectQuizCount => getCounter(_perfectQuizKey);
   int get perfectTypingCount => getCounter(_perfectTypingKey);
   int get aiLessonCount => getCounter(_aiLessonCountKey);
+
+  // ─── Server Sync Operations ───
+
+  static const _counterPerfectQuizId = '_counter_perfect_quiz';
+  static const _counterPerfectTypingId = '_counter_perfect_typing';
+  static const _counterAiLessonId = '_counter_ai_lesson';
+
+  /// Sync achievements with server (push-then-pull).
+  Future<void> syncWithServer() async {
+    try {
+      final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
+      _ensureLoaded();
+
+      // Build sync data: all achievement progress + counters as special entries
+      final syncData = <Map<String, dynamic>>[];
+
+      for (final ap in _cache.values) {
+        syncData.add({
+          'achievementId': ap.id,
+          'currentProgress': ap.currentProgress,
+          'unlocked': ap.unlocked,
+          'unlockedAt': ap.unlockedAt?.toIso8601String(),
+        });
+      }
+
+      // Add counter entries
+      syncData.add({
+        'achievementId': _counterPerfectQuizId,
+        'currentProgress': perfectQuizCount,
+        'unlocked': false,
+      });
+      syncData.add({
+        'achievementId': _counterPerfectTypingId,
+        'currentProgress': perfectTypingCount,
+        'unlocked': false,
+      });
+      syncData.add({
+        'achievementId': _counterAiLessonId,
+        'currentProgress': aiLessonCount,
+        'unlocked': false,
+      });
+
+      // Push to server, get merged response
+      final response = await dio.post('/achievements/sync', data: syncData);
+      if (response.statusCode == 200 && response.data is List) {
+        final serverData = (response.data as List)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        // Update local cache with server response
+        for (final item in serverData) {
+          final id = item['achievementId'] as String? ?? item['id'] as String?;
+          if (id == null) continue;
+
+          // Handle counter entries
+          if (id == _counterPerfectQuizId) {
+            final val = item['currentProgress'] as int? ?? 0;
+            if (val > perfectQuizCount) await _prefs.setInt(_perfectQuizKey, val);
+            continue;
+          }
+          if (id == _counterPerfectTypingId) {
+            final val = item['currentProgress'] as int? ?? 0;
+            if (val > perfectTypingCount) await _prefs.setInt(_perfectTypingKey, val);
+            continue;
+          }
+          if (id == _counterAiLessonId) {
+            final val = item['currentProgress'] as int? ?? 0;
+            if (val > aiLessonCount) await _prefs.setInt(_aiLessonCountKey, val);
+            continue;
+          }
+
+          // Regular achievement
+          _cache[id] = AchievementProgress(
+            id: id,
+            currentProgress: item['currentProgress'] as int? ?? 0,
+            unlocked: item['unlocked'] as bool? ?? false,
+            unlockedAt: item['unlockedAt'] != null
+                ? DateTime.tryParse(item['unlockedAt'] as String)
+                : null,
+          );
+        }
+        await _save();
+        debugPrint('🏆 ✅ Achievement sync done: ${serverData.length} entries');
+      }
+    } catch (e) {
+      debugPrint('🏆 ❌ Achievement sync failed: $e');
+    }
+  }
+
+  /// Pull achievements from server only (for account switch).
+  Future<void> pullFromServer() async {
+    try {
+      final dio = GetIt.I<Dio>(instanceName: 'BackendDio');
+
+      final response = await dio.get('/achievements');
+      if (response.statusCode != 200) return;
+
+      final serverData = (response.data as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+
+      // Clear local cache and rebuild
+      _cache.clear();
+
+      for (final item in serverData) {
+        final id = item['achievementId'] as String? ?? item['id'] as String?;
+        if (id == null) continue;
+
+        // Handle counter entries
+        if (id == _counterPerfectQuizId) {
+          await _prefs.setInt(_perfectQuizKey, item['currentProgress'] as int? ?? 0);
+          continue;
+        }
+        if (id == _counterPerfectTypingId) {
+          await _prefs.setInt(_perfectTypingKey, item['currentProgress'] as int? ?? 0);
+          continue;
+        }
+        if (id == _counterAiLessonId) {
+          await _prefs.setInt(_aiLessonCountKey, item['currentProgress'] as int? ?? 0);
+          continue;
+        }
+
+        _cache[id] = AchievementProgress(
+          id: id,
+          currentProgress: item['currentProgress'] as int? ?? 0,
+          unlocked: item['unlocked'] as bool? ?? false,
+          unlockedAt: item['unlockedAt'] != null
+              ? DateTime.tryParse(item['unlockedAt'] as String)
+              : null,
+        );
+      }
+
+      await _save();
+      debugPrint('🏆 ✅ Pulled ${_cache.length} achievements from server');
+    } catch (e) {
+      debugPrint('🏆 ❌ Achievement pull failed: $e');
+    }
+  }
+
+  /// Clear all local achievement data.
+  Future<void> clearLocal() async {
+    _cache.clear();
+    _loaded = false;
+    await _prefs.remove(_key);
+    await _prefs.remove(_perfectQuizKey);
+    await _prefs.remove(_perfectTypingKey);
+    await _prefs.remove(_aiLessonCountKey);
+    debugPrint('🏆 🗑️ Local achievement data cleared');
+  }
 }

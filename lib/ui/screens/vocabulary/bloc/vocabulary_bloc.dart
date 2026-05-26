@@ -37,6 +37,7 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
         changeStatus: (event) => _onChangeStatus(event, emit),
         editDefinition: (event) => _onEditDefinition(event, emit),
         addWordRandomly: (event) => _onAddWordRandomly(event, emit),
+        recordSrsReview: (event) => _onRecordSrsReview(event, emit),
       );
     });
   }
@@ -49,14 +50,32 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     }
     final words = _oxfordWordsRepository.getAllOxfordWords();
     
-    // Auto-migrate existing starred words into SRS if they aren't already there
+    // Auto-migrate existing starred/learning words into SRS if they aren't already there
     for (final word in words) {
-      if (word.status == WordStatus.star) {
+      if (word.status == WordStatus.star || word.status == WordStatus.learning) {
         _srsRepository.scheduleWord(word.index);
       }
     }
     
     debugPrint('VocabularyBloc: getAllOxfordWords - success - words ${words.length}');
+    emit(state.copyWith(words: words));
+  }
+
+  /// Force reload words from Hive — used after server sync updates Hive statuses.
+  /// This is a public method (not an event) to avoid regenerating freezed code.
+  void refreshWordsFromHive() {
+    debugPrint('VocabularyBloc: refreshWordsFromHive');
+    final words = _oxfordWordsRepository.getAllOxfordWords();
+    
+    // Auto-migrate starred/learning words into SRS
+    for (final word in words) {
+      if (word.status == WordStatus.star || word.status == WordStatus.learning) {
+        _srsRepository.scheduleWord(word.index);
+      }
+    }
+    
+    debugPrint('VocabularyBloc: refreshWordsFromHive - ${words.length} words reloaded');
+    // ignore: invalid_use_of_visible_for_testing_member
     emit(state.copyWith(words: words));
   }
 
@@ -71,11 +90,19 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     }).toList();
     _oxfordWordsRepository.saveWord(newWord);
     
-    // SRS Syncing
+    // SRS Syncing + push status to backend
     if (event.status == WordStatus.star) {
       _srsRepository.scheduleWord(event.word.index);
-    } else if (event.status == WordStatus.unknown || event.status == WordStatus.mastered) {
+      _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
+    } else if (event.status == WordStatus.learning) {
+      _srsRepository.scheduleWord(event.word.index);
+      _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
+    } else if (event.status == WordStatus.unknown) {
       _srsRepository.removeWord(event.word.index);
+      _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
+    } else if (event.status == WordStatus.mastered) {
+      _srsRepository.removeWord(event.word.index);
+      _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
     }
 
     emit(state.copyWith(words: words));
@@ -124,6 +151,7 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     for (final word in randomWords) {
       final newWord = word.copyWith(status: WordStatus.star);
       _oxfordWordsRepository.saveWord(newWord);
+      _srsRepository.scheduleWord(word.index);
     }
     emit(state.copyWith(words: state.words.map((word) {
       if (randomWords.contains(word)) {
@@ -131,5 +159,28 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
       }
       return word;
     }).toList()));
+  }
+
+  Future<void> _onRecordSrsReview(_RecordSrsReview event, Emitter<VocabularyState> emit) async {
+    _srsRepository.recordReview(event.wordIndex, event.correct);
+
+    // Auto-mastery check: if 4+ consecutive correct AND interval >= 7 days
+    final srsData = _srsRepository.get(event.wordIndex);
+    if (srsData != null && srsData.repetitions >= 4 && srsData.interval >= 7) {
+      // Find the word and auto-master it
+      final words = state.words.map((w) {
+        if (w.index == event.wordIndex) {
+          final mastered = w.copyWith(status: WordStatus.mastered);
+          _oxfordWordsRepository.saveWord(mastered);
+          _srsRepository.removeWord(w.index);
+          _srsRepository.pushWordStatus(w.index, WordStatus.mastered.toApiString());
+          _progressRepository.logSession(timeSpentSeconds: 0, wordsLearned: 1, lessonsCompleted: 0);
+          _achievementChecker.checkVocabAchievements(state.words);
+          return mastered;
+        }
+        return w;
+      }).toList();
+      emit(state.copyWith(words: words));
+    }
   }
 }

@@ -83,6 +83,7 @@ class DI {
       () => LessonBloc(
         lessonRepository: sl(),
         progressRepository: sl(),
+        achievementChecker: sl(),
       ),
     );
 
@@ -90,6 +91,7 @@ class DI {
       () => StreakBloc(
         streakRepository: sl(),
         progressRepository: sl(),
+        achievementChecker: sl(),
       ),
     );
 

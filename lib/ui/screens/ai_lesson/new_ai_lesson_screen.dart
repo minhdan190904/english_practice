@@ -2,9 +2,14 @@ import '../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import '../../../configs/di.dart';
 import '../../../data/models/sample_passage_response.dart';
 import '../../../data/models/saved_lesson.dart';
+import '../../../data/models/word_status.dart';
 import '../../../data/repositories/ai_repository.dart';
+import '../../../data/repositories/achievement_repository.dart';
+import '../../../utils/achievement_checker.dart';
+import '../../screens/vocabulary/bloc/vocabulary_bloc.dart';
 import 'ai_lesson_detail_screen.dart';
 import 'select_level_screen.dart';
 import 'select_topic_screen.dart';
@@ -120,6 +125,14 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
         sentences: result.sentences,
       );
       await SavedLessonsRepository().save(lesson);
+
+      // Achievement checks
+      final achievementChecker = DI().sl<AchievementChecker>();
+      await achievementChecker.checkAiLessonAchievements();
+      final vocabWords = DI().sl<VocabularyBloc>().state.words;
+      final masteredCount = vocabWords.where((w) => w.status == WordStatus.mastered).length;
+      final aiLessonCount = DI().sl<AchievementRepository>().aiLessonCount;
+      await achievementChecker.checkPolyglot(aiLessonCount, masteredCount);
 
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(

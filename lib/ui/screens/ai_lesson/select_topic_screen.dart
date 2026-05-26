@@ -2,8 +2,12 @@ import '../../../../utils/l10n.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/sample_passage_response.dart';
 import '../../../data/models/saved_lesson.dart';
+import '../../../data/models/word_status.dart';
+import '../../../data/repositories/achievement_repository.dart';
 import '../../../data/repositories/ai_repository.dart';
 import '../../../configs/di.dart';
+import '../../../utils/achievement_checker.dart';
+import '../../screens/vocabulary/bloc/vocabulary_bloc.dart';
 import 'ai_lesson_detail_screen.dart';
 
 class SelectTopicScreen extends StatefulWidget {
@@ -108,6 +112,14 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
         sentences: lessonResult.sentences,
       );
       await SavedLessonsRepository().save(lesson);
+
+      // Achievement checks
+      final achievementChecker = DI().sl<AchievementChecker>();
+      await achievementChecker.checkAiLessonAchievements();
+      final vocabWords = DI().sl<VocabularyBloc>().state.words;
+      final masteredCount = vocabWords.where((w) => w.status == WordStatus.mastered).length;
+      final aiLessonCount = DI().sl<AchievementRepository>().aiLessonCount;
+      await achievementChecker.checkPolyglot(aiLessonCount, masteredCount);
 
       if (!mounted) return;
 

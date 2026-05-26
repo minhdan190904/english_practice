@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../configs/di.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
+import '../../../data/repositories/srs_repository.dart';
 
 import '../../../navigation/app_router.dart';
 import '../../../utils/global_values.dart';
@@ -24,12 +26,34 @@ class ReviewScreen extends StatefulWidget {
 }
 
 class _ReviewScreenState extends State<ReviewScreen> {
-
+  final SrsRepository _srsRepository = DI().sl<SrsRepository>();
 
   @override
   Widget build(BuildContext context) {
     final vocabularyState = context.watch<VocabularyBloc>().state;
-    final reviewWords = vocabularyState.words.where((word) => word.status == WordStatus.star).toList();
+
+    // Get SRS due words and filter vocabulary to only those
+    final dueWordData = _srsRepository.getDueWords();
+    final dueIndices = dueWordData.map((srs) => srs.wordIndex).toSet();
+    final reviewWords = vocabularyState.words
+        .where((word) => word.status == WordStatus.star && dueIndices.contains(word.index))
+        .toList();
+
+    // Sort: overdue words first, then today's due words
+    reviewWords.sort((a, b) {
+      final srsA = _srsRepository.get(a.index);
+      final srsB = _srsRepository.get(b.index);
+      final aOverdue = srsA?.isOverdue ?? false;
+      final bOverdue = srsB?.isOverdue ?? false;
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      final aDate = srsA?.nextReviewDate;
+      final bDate = srsB?.nextReviewDate;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
+    });
+
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     return BasePage(
@@ -51,6 +75,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    '${reviewWords.length} word${reviewWords.length == 1 ? '' : 's'} due for review',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withAlpha(160),
+                    ),
+                  ),
+                ),
                 Expanded(
                   child: ListView.builder(
                     itemCount: reviewWords.length,
@@ -117,9 +150,46 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 const SizedBox(height: 16),
               ],
             )
-          : EmptyReviewPage(
-              hasWords: vocabularyState.words.any((word) => word.status == WordStatus.unknown),
+          : _buildEmptyState(context, vocabularyState),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, VocabularyState vocabularyState) {
+    final hasStarredWords = vocabularyState.words.any((word) => word.status == WordStatus.star);
+    final hasUnknownWords = vocabularyState.words.any((word) => word.status == WordStatus.unknown);
+
+    if (hasStarredWords) {
+      // Has starred words but none are due — all caught up!
+      final textTheme = Theme.of(context).textTheme;
+      final colorScheme = Theme.of(context).colorScheme;
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🎉', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 16),
+            Text(
+              'All caught up!',
+              style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'No words are due for review right now.\nCome back later!',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withAlpha(150),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return EmptyReviewPage(
+      hasWords: hasUnknownWords,
     );
   }
 

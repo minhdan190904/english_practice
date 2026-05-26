@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../configs/di.dart';
 import '../../../../data/models/word.dart';
+import '../../../../utils/achievement_checker.dart';
 
 /// Result data for a single typing attempt.
 class TypingResult {
@@ -17,7 +19,7 @@ class TypingResult {
 
 /// Result screen shown after completing a Typing Challenge.
 /// Design matches FlashcardResultScreen pattern.
-class TypingResultScreen extends StatelessWidget {
+class TypingResultScreen extends StatefulWidget {
   final int total;
   final int totalStars;
   final int maxPossibleStars;
@@ -37,8 +39,23 @@ class TypingResultScreen extends StatelessWidget {
     required this.onBack,
   });
 
-  int get _wrongCount => total - correctCount;
-  double get _accuracy => total == 0 ? 0 : correctCount / total;
+  @override
+  State<TypingResultScreen> createState() => _TypingResultScreenState();
+}
+
+class _TypingResultScreenState extends State<TypingResultScreen> {
+  int get _wrongCount => widget.total - widget.correctCount;
+  double get _accuracy => widget.total == 0 ? 0 : widget.correctCount / widget.total;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for perfect typing achievement
+    if (widget.correctCount == widget.total && widget.total >= 5) {
+      final achievementChecker = DI().sl<AchievementChecker>();
+      achievementChecker.checkPerfectTyping();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +80,7 @@ class TypingResultScreen extends StatelessWidget {
       message = 'Keep practicing!';
     }
 
-    final wrongResults = results.where((r) => !r.correct).toList();
+    final wrongResults = widget.results.where((r) => !r.correct).toList();
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -72,7 +89,7 @@ class TypingResultScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         title: const Text(
           'Practice Complete',
@@ -119,7 +136,7 @@ class TypingResultScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'You typed $correctCount out of $total words correctly',
+                          'You typed ${widget.correctCount} out of ${widget.total} words correctly',
                           style: textTheme.bodyLarge
                               ?.copyWith(color: Colors.black54),
                           textAlign: TextAlign.center,
@@ -142,7 +159,7 @@ class TypingResultScreen extends StatelessWidget {
                                 icon: Icons.check_circle_rounded,
                                 iconColor: Colors.green,
                                 backgroundColor: const Color(0xFFE8F5E9),
-                                value: correctCount.toString(),
+                                value: widget.correctCount.toString(),
                                 label: 'Correct',
                               ),
                             ),
@@ -162,7 +179,7 @@ class TypingResultScreen extends StatelessWidget {
                                 icon: Icons.star_rounded,
                                 iconColor: const Color(0xFFFFC107),
                                 backgroundColor: const Color(0xFFFFF8E1),
-                                value: '$totalStars/$maxPossibleStars',
+                                value: '${widget.totalStars}/${widget.maxPossibleStars}',
                                 label: 'Stars',
                               ),
                             ),
@@ -247,7 +264,7 @@ class TypingResultScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onPracticeAgain,
+                    onPressed: widget.onPracticeAgain,
                     icon: const Icon(Icons.refresh_rounded,
                         color: Colors.white),
                     label: const Text(
@@ -271,7 +288,7 @@ class TypingResultScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: onBack,
+                    onPressed: widget.onBack,
                     icon: const Icon(Icons.check_rounded,
                         color: Colors.white, size: 20),
                     label: const Text(

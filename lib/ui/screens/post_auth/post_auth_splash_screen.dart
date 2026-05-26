@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../data/models/saved_lesson.dart';
 import '../../../data/repositories/streak_repository.dart';
+import '../../../data/repositories/srs_repository.dart';
+import '../../../data/repositories/achievement_repository.dart';
 import '../../../configs/di.dart';
 import '../../../generated/assets.dart';
 import '../../../navigation/app_router.dart';
@@ -62,6 +64,16 @@ class _PostAuthSplashScreenState extends State<PostAuthSplashScreen>
         try {
           final streakRepo = DI().sl<StreakRepository>();
           await streakRepo.syncWithServer();
+        } catch (_) {}
+
+        // Pull SRS and achievements for new account
+        try {
+          final srsRepo = DI().sl<SrsRepository>();
+          await srsRepo.pullFromServer();
+        } catch (_) {}
+        try {
+          final achievementRepo = DI().sl<AchievementRepository>();
+          await achievementRepo.pullFromServer();
         } catch (_) {}
       } else {
         // Sign out flow — Google unlinked, already back to device account

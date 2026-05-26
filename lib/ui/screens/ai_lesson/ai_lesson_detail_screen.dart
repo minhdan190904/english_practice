@@ -12,7 +12,8 @@ import '../../../data/models/word.dart';
 import '../../../data/models/sense.dart';
 import '../../../data/models/example.dart';
 import '../../../data/repositories/ai_repository.dart';
-import '../../blocs/iap/iap_bloc.dart';
+import '../../../data/models/word_status.dart';
+import '../practice/practice_screen.dart';
 import '../review/flash_card_screen.dart';
 import '../settings/bloc/settings_bloc.dart';
 import '../vocabulary/bloc/vocabulary_bloc.dart';
@@ -72,6 +73,35 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
       if (w.shortMeaningVi?.isNotEmpty == true) {
         _viWordMap[w.shortMeaningVi!.toLowerCase()] = w;
       }
+    }
+    // Mark AI lesson words as LEARNING if they are UNKNOWN in Oxford vocab
+    _markWordsAsLearning();
+  }
+
+  /// Match selected words to Oxford vocabulary by word text
+  /// and mark them as LEARNING if currently UNKNOWN.
+  void _markWordsAsLearning() {
+    try {
+      final vocabBloc = DI().sl<VocabularyBloc>();
+      final allOxfordWords = vocabBloc.state.words;
+      if (allOxfordWords.isEmpty) return;
+
+      // Build a text→Word lookup for Oxford vocab
+      final oxfordLookup = <String, Word>{};
+      for (final w in allOxfordWords) {
+        oxfordLookup[w.word.toLowerCase()] = w;
+      }
+
+      for (final sw in widget.selectedWords) {
+        final match = oxfordLookup[sw.word.toLowerCase()];
+        if (match != null && match.status == WordStatus.unknown) {
+          vocabBloc.add(
+            VocabularyEvent.changeStatus(match, WordStatus.learning),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to mark words as LEARNING: $e');
     }
   }
 
@@ -586,13 +616,27 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
     return _highlightVietnameseSentence(context, fullVi);
   }
 
-  void _practiceNow() {
+  List<Word> _buildPracticeWords() {
     final locale = context.read<SettingsBloc>().state.settingsSnapshot.locale;
     final showVi = locale == 'vi';
 
-    final words = widget.selectedWords.asMap().entries.map((entry) {
+    // Match with Oxford vocabulary to get real indices and check mastered status
+    final vocabBloc = DI().sl<VocabularyBloc>();
+    final allOxfordWords = vocabBloc.state.words;
+    final oxfordLookup = <String, Word>{};
+    for (final w in allOxfordWords) {
+      oxfordLookup[w.word.toLowerCase()] = w;
+    }
+
+    return widget.selectedWords.asMap().entries.map((entry) {
       final i = entry.key;
       final w = entry.value;
+
+      // Try to find the real Oxford word to get correct index + status
+      final oxfordMatch = oxfordLookup[w.word.toLowerCase()];
+      final realIndex = oxfordMatch?.index ?? (i + 10000); // Use high fake index if not found
+      final status = oxfordMatch?.status ?? WordStatus.unknown;
+
       return Word(
         word: w.word,
         pos: w.pos ?? '',
@@ -608,23 +652,150 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             examples: w.example != null ? [Example(cf: '', x: w.example!)] : [],
           ),
         ],
-        index: i,
+        index: realIndex,
+        status: status,
       );
-    }).toList();
+    })
+    // Filter out MASTERED words — no need to practice them
+    .where((w) => w.status != WordStatus.mastered)
+    .toList();
+  }
 
-    // Capture bloc references BEFORE pushing (they come from the ancestor tree)
-    final settingsBloc = context.read<SettingsBloc>();
+  void _practiceNow() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => DI().sl<VocabularyBloc>()),
-            BlocProvider(create: (_) => DI().sl<IapBloc>()),
-            // Re-provide SettingsBloc so _BackCard's context.watch works
-            BlocProvider<SettingsBloc>.value(value: settingsBloc),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withAlpha(40),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Chọn hình thức ôn tập',
+              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.selectedWords.length} từ vựng',
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha(130)),
+            ),
+            const SizedBox(height: 20),
+            // Option 1: Flashcard
+            _buildReviewOption(
+              ctx: ctx,
+              icon: Icons.style_rounded,
+              title: 'Flashcard',
+              subtitle: 'Lật thẻ để ôn nghĩa từ',
+              color: colorScheme.primary,
+              onTap: () {
+                Navigator.pop(ctx);
+                final words = _buildPracticeWords();
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: DI().sl<VocabularyBloc>(),
+                      child: FlashCardScreen(words: words),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            // Option 2: Practice
+            _buildReviewOption(
+              ctx: ctx,
+              icon: Icons.quiz_rounded,
+              title: 'Luyện tập từ vựng',
+              subtitle: 'Trắc nghiệm, điền từ, nghe phát âm',
+              color: Colors.teal,
+              onTap: () {
+                Navigator.pop(ctx);
+                final words = _buildPracticeWords();
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: DI().sl<VocabularyBloc>(),
+                      child: PracticeScreen(words: words, title: widget.title),
+                    ),
+                  ),
+                );
+              },
+            ),
           ],
-          child: FlashCardScreen(words: words, title: widget.title),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewOption({
+    required BuildContext ctx,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withAlpha(60), width: 1.5),
+            color: color.withAlpha(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      )),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withAlpha(150),
+                      )),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: color),
+            ],
+          ),
         ),
       ),
     );

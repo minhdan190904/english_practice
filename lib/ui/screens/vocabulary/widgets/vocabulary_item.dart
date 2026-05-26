@@ -71,19 +71,19 @@ class VocabularyItem extends StatelessWidget {
                   const SizedBox(width: 8),
                   if (showReviewButton && word.status != WordStatus.mastered)
                     SvgButton(
-                      backgroundColor: word.status == WordStatus.star ? colorScheme.primary : colorScheme.surface,
-                      color: word.status == WordStatus.star ? colorScheme.primaryContainer : colorScheme.onPrimaryContainer,
+                      backgroundColor: (word.status == WordStatus.star || word.status == WordStatus.learning) ? colorScheme.primary : colorScheme.surface,
+                      color: (word.status == WordStatus.star || word.status == WordStatus.learning) ? colorScheme.primaryContainer : colorScheme.onPrimaryContainer,
                       svg: Assets.svgStar,
                       size: 16,
                       onPressed: () => _startWord(context),
                     )
                   else
                     Spacer(),
-                  if (word.status == WordStatus.star && showReviewButton) ...[
+                  if ((word.status == WordStatus.star || word.status == WordStatus.learning) && showReviewButton) ...[
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'studying...',
+                        word.status == WordStatus.learning ? 'learning...' : 'studying...',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onPrimaryContainer,
                         ),
@@ -108,14 +108,15 @@ class VocabularyItem extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             Phonetic(
                               phonetic: word.phonetic,
                               phoneticText: word.phoneticText,
                               backgroundColor: CustomColors.green,
                             ),
-                            const SizedBox(width: 8),
                             Phonetic(
                               phonetic: word.phoneticAm,
                               phoneticText: word.phoneticAmText,
@@ -208,6 +209,8 @@ class VocabularyItem extends StatelessWidget {
         return colorScheme.secondaryContainer.withAlpha(100);
       case WordStatus.star:
         return colorScheme.tertiaryContainer;
+      case WordStatus.learning:
+        return const Color(0xFFE8EAF6); // indigo tint
     }
   }
 
@@ -250,6 +253,9 @@ class VocabularyItem extends StatelessWidget {
         break;
       case WordStatus.mastered:
         dotColor = Colors.green;
+        break;
+      case WordStatus.learning:
+        dotColor = Colors.indigo;
         break;
     }
     return Container(

@@ -48,6 +48,8 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
       builder: (context, state) {
         final words = _getFilteredWords(state.words);
         final starredWords = state.words.where((w) => w.status == WordStatus.star).toList();
+        final learningWords = state.words.where((w) => w.status == WordStatus.learning).toList();
+        final reviewableWords = [...starredWords, ...learningWords];
         final masteredCount = state.words.where((w) => w.status == WordStatus.mastered).length;
 
         return BasePage(
@@ -69,17 +71,17 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                   context,
                   total: state.words.length,
                   starred: starredWords.length,
+                  learning: learningWords.length,
                   mastered: masteredCount,
                 ),
                 const SizedBox(height: 8),
-                // SRS Review Banner — shows when words are due
-                SrsReviewBanner(
-                  srsRepository: DI().sl<SrsRepository>(),
-                  onReviewNow: () => context.push(RoutePaths.review),
-                ),
-                // Nút Start Review: chỉ hiện khi có từ starred, navigate thẳng đến /flashcards
-                if (starredWords.isNotEmpty) ...[
-                  _buildStartReviewButton(context, starredWords),
+                // SRS Review Banner — temporarily hidden
+                // SrsReviewBanner(
+                //   srsRepository: DI().sl<SrsRepository>(),
+                //   onReviewNow: () => context.push(RoutePaths.review),
+                // ),
+                if (reviewableWords.isNotEmpty) ...[
+                  _buildStartReviewButton(context, reviewableWords),
                   const SizedBox(height: 8),
                 ],
                 SearchBox(
@@ -132,11 +134,12 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     );
   }
 
-  /// Stats bar: Total / ★ Studying / ✓ Mastered
+  /// Stats bar: Total / 📖 Learning / ★ Studying / ✓ Mastered
   /// Data từ VocabularyBloc (local Hive — không gọi API)
   Widget _buildStatsBar(BuildContext context, {
     required int total,
     required int starred,
+    required int learning,
     required int mastered,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -150,6 +153,9 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(context, label: L10n.tr(context, 'total'), value: total.toString(), icon: Icons.library_books_outlined),
+          _buildStatDivider(colorScheme),
+          _buildStatItem(context, label: 'Learning', value: learning.toString(), icon: Icons.menu_book_rounded,
+              iconColor: Colors.indigo),
           _buildStatDivider(colorScheme),
           _buildStatItem(context, label: L10n.tr(context, 'studying'), value: starred.toString(), icon: Icons.star_rounded,
               iconColor: colorScheme.tertiary),
@@ -211,9 +217,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     return RoundedButton(
       borderRadius: 12,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      onPressed: () {
-        context.push(RoutePaths.flashcards, extra: {'words': starredWords});
-      },
+      onPressed: () => _showReviewModeDialog(context, starredWords),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -227,6 +231,70 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showReviewModeDialog(BuildContext context, List<Word> words) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withAlpha(40),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Chọn hình thức ôn tập',
+              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${words.length} từ vựng',
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha(130)),
+            ),
+            const SizedBox(height: 20),
+            // Option 1: Flashcard
+            _ReviewModeOption(
+              icon: Icons.style_rounded,
+              title: 'Flashcard',
+              subtitle: 'Lật thẻ để ôn nghĩa từ',
+              color: colorScheme.primary,
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push(RoutePaths.flashcards, extra: {'words': words});
+              },
+            ),
+            const SizedBox(height: 12),
+            // Option 2: Practice
+            _ReviewModeOption(
+              icon: Icons.quiz_rounded,
+              title: 'Luyện tập từ vựng',
+              subtitle: 'Trắc nghiệm, điền từ, nghe phát âm',
+              color: Colors.teal,
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push(RoutePaths.practice, extra: {'words': words, 'title': 'Luyện tập ⭐'});
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -336,5 +404,79 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     if (status.isNotEmpty) { if (result.isNotEmpty) result += ', '; result += status; }
     if (search.isNotEmpty) { if (result.isNotEmpty) result += ', '; result += search; }
     return result;
+  }
+}
+
+// ─── Review Mode Option Card ─────────────────────────────────────────────────
+class _ReviewModeOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ReviewModeOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withAlpha(60), width: 1.5),
+            color: color.withAlpha(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withAlpha(150),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: color),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
