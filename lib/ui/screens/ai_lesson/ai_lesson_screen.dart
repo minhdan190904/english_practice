@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,7 +23,7 @@ class AiLessonScreen extends StatefulWidget {
 class _AiLessonScreenState extends State<AiLessonScreen> {
   late Future<List<SavedLesson>> _lessonsFuture;
   final SavedLessonsRepository _repo = SavedLessonsRepository();
-  int? _lastUserId;
+  String? _lastUserId;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _AiLessonScreenState extends State<AiLessonScreen> {
               passageVi: lesson.passageVi,
               selectedWords: selectedWords,
               imageBase64: lesson.imageBase64,
+              imageUrl: lesson.imageUrl,
               sentences: lesson.sentences,
             ),
           ),
@@ -209,7 +211,8 @@ class _LessonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final hasImage = lesson.imageBase64 != null && lesson.imageBase64!.isNotEmpty;
+    final hasImage = (lesson.imageUrl != null && lesson.imageUrl!.isNotEmpty) ||
+        (lesson.imageBase64 != null && lesson.imageBase64!.isNotEmpty);
 
     return GestureDetector(
       onTap: onTap,
@@ -247,11 +250,20 @@ class _LessonCard extends StatelessWidget {
             SizedBox(
               height: 145,
               width: double.infinity,
-              child: Image.memory(
-                _base64ToBytes(lesson.imageBase64!),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildGradientPlaceholder(height: 160),
-              ),
+              child: (lesson.imageUrl != null && lesson.imageUrl!.isNotEmpty)
+                  ? CachedNetworkImage(
+                      imageUrl: lesson.imageUrl!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 145,
+                      placeholder: (context, url) => _buildGradientPlaceholder(height: 145),
+                      errorWidget: (context, url, error) => _buildGradientPlaceholder(height: 145),
+                    )
+                  : Image.memory(
+                      _base64ToBytes(lesson.imageBase64!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildGradientPlaceholder(height: 160),
+                    ),
             ),
             // Gradient overlay from bottom
             Positioned.fill(
@@ -421,7 +433,7 @@ class _LessonCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime dt) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = ['thg 1', 'thg 2', 'thg 3', 'thg 4', 'thg 5', 'thg 6', 'thg 7', 'thg 8', 'thg 9', 'thg 10', 'thg 11', 'thg 12'];
     return '${dt.day} ${months[dt.month - 1]}';
   }
 
@@ -453,7 +465,7 @@ class _WordCountChip extends StatelessWidget {
           Icon(Icons.menu_book_rounded, size: 13, color: colorScheme.primary),
           const SizedBox(width: 4),
           Text(
-            '$count words',
+            '$count từ',
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.8),
               fontWeight: FontWeight.w600,

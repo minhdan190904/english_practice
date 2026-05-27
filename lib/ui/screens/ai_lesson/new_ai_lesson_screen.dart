@@ -122,6 +122,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
             .toList(),
         createdAt: DateTime.now(),
         imageBase64: result.imageBase64,
+        imageUrl: result.imageUrl,
         sentences: result.sentences,
       );
       await SavedLessonsRepository().save(lesson);
@@ -143,6 +144,7 @@ class _NewAiLessonScreenState extends State<NewAiLessonScreen> {
               passageVi: result.passageVi,
               selectedWords: wordsForDetail,
               imageBase64: result.imageBase64,
+              imageUrl: result.imageUrl,
               sentences: result.sentences,
             ),
           ),

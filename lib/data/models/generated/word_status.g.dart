@@ -17,10 +17,9 @@ class WordStatusAdapter extends TypeAdapter<WordStatus> {
         return WordStatus.unknown;
       case 1:
         return WordStatus.mastered;
-      case 2:
-        return WordStatus.star;
-      case 3:
-        return WordStatus.learning;
+      case 2: // was star, now studying
+      case 3: // was learning, now studying
+        return WordStatus.studying;
       default:
         return WordStatus.unknown;
     }
@@ -35,11 +34,8 @@ class WordStatusAdapter extends TypeAdapter<WordStatus> {
       case WordStatus.mastered:
         writer.writeByte(1);
         break;
-      case WordStatus.star:
+      case WordStatus.studying:
         writer.writeByte(2);
-        break;
-      case WordStatus.learning:
-        writer.writeByte(3);
         break;
     }
   }

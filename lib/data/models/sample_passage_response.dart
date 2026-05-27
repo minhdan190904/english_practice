@@ -9,6 +9,7 @@ class SamplePassageResponse {
   final String level;
   final int wordCount;
   final String? imageBase64;
+  final String? imageUrl;
   final List<SentencePair>? sentences;
 
   SamplePassageResponse({
@@ -20,6 +21,7 @@ class SamplePassageResponse {
     required this.level,
     required this.wordCount,
     this.imageBase64,
+    this.imageUrl,
     this.sentences,
   });
 
@@ -43,6 +45,7 @@ class SamplePassageResponse {
       level: json['level'] ?? '',
       wordCount: json['wordCount'] ?? 0,
       imageBase64: json['imageBase64'],
+      imageUrl: json['imageUrl'],
       sentences: sentencesList,
     );
   }

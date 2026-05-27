@@ -87,7 +87,7 @@ class _CategoryWordsScreenState extends State<CategoryWordsScreen> {
                   _onWordStatusChanged(index, newStatus);
                 },
                 onStar: () {
-                  final newStatus = word.status == WordStatus.star ? WordStatus.unknown : WordStatus.star;
+                  final newStatus = word.status == WordStatus.studying ? WordStatus.unknown : WordStatus.studying;
                   _onWordStatusChanged(index, newStatus);
                 },
               );

@@ -46,12 +46,12 @@ class _SearchBoxState extends State<SearchBox> {
         child: Column(
           children: [
             TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search',
-                border: OutlineInputBorder(
+              decoration: InputDecoration(
+                hintText: L10n.tr(context, 'search'),
+                border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(8)),
                 ),
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
               ),
               onChanged: widget.onSearch,
               onSubmitted: widget.onSearch,
@@ -80,7 +80,7 @@ class _SearchBoxState extends State<SearchBox> {
                             selectedColor: pos.color,
                             checkmarkColor: Colors.white,
                             label: Text(
-                              pos.value,
+                              pos.localizedValue(context),
                               style: textTheme.titleSmall?.copyWith(
                                 color: selected ? Colors.white : colorScheme.onPrimaryContainer,
                               ),
@@ -150,7 +150,7 @@ class _SearchBoxState extends State<SearchBox> {
                           child: FilterChip(
                             selected: widget.selectedStatus.contains(status),
                             label: Text(
-                              status.value,
+                              status.localizedValue(context),
                               style: textTheme.titleSmall?.copyWith(
                                 color: colorScheme.onPrimaryContainer,
                               ),
@@ -181,7 +181,7 @@ class _SearchBoxState extends State<SearchBox> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    "Clear Filters",
+                    L10n.tr(context, 'clear_filters'),
                     style: textTheme.titleSmall?.copyWith(
                       color: colorScheme.primary,
                     ),

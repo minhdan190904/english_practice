@@ -18,9 +18,6 @@ import 'app.dart';
 import 'configs/di.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/data_sources/token_storage.dart';
-import 'data/models/saved_lesson.dart';
-import 'data/repositories/srs_repository.dart';
-import 'data/repositories/achievement_repository.dart';
 import 'data/repositories/oxford_words_repository.dart';
 import 'navigation/app_router.dart';
 import 'ui/blocs/iap/iap_bloc.dart';
@@ -31,7 +28,6 @@ import 'ui/screens/settings/bloc/settings_bloc.dart';
 import 'utils/ad/consent_manager.dart';
 import 'utils/global_values.dart';
 import 'utils/local_notifications_tools.dart';
-import 'ui/screens/vocabulary/bloc/vocabulary_bloc.dart';
 
 /// Get Android device ID (ANDROID_ID)
 Future<String> _getDeviceId() async {
@@ -140,25 +136,7 @@ void main() async {
     DI().sl<AuthCubit>().setUser(user);
   });
 
-  // Sync data with server (background, non-blocking)
-  runStep('SyncData', () async {
-    final savedLessonsRepo = SavedLessonsRepository();
-    await savedLessonsRepo.syncWithServer();
-
-    // Sync SRS data + word statuses from server → Hive
-    final srsRepo = DI().sl<SrsRepository>();
-    await srsRepo.syncWithServer();
-
-    // Refresh VocabularyBloc to pick up updated statuses from Hive
-    final vocabBloc = DI().sl<VocabularyBloc>();
-    if (!vocabBloc.isClosed) {
-      vocabBloc.refreshWordsFromHive();
-    }
-
-    // Sync achievements
-    final achievementRepo = DI().sl<AchievementRepository>();
-    await achievementRepo.syncWithServer();
-  });
+  // Sync data is now handled by SplashScreen with visual progress feedback
 
   if (appFlavor != 'production' || kDebugMode) {
     debugPrint('setAnalyticsCollectionEnabled false');

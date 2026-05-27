@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../constants/custom_colors.dart';
+import '../../../constants/word_pos.dart';
 import '../../../data/models/word.dart';
 import '../../../data/models/word_status.dart';
 import '../../../utils/l10n.dart';
@@ -34,15 +35,17 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
         context.watch<SettingsBloc>().state.settingsSnapshot.locale;
     final showVietnamese = locale == 'vi';
 
+    final localizedPos = widget.word.pos.split(', ').where((p) => p.isNotEmpty).map((p) => WordPos.fromString(p).localizedValue(context)).join(', ');
+
     return SelectionAreaWithSearch(
       child: BasePage(
-        title: 'Word Details',
+        title: L10n.tr(context, 'word_details'),
         actions: [
           if (widget.word.status != WordStatus.mastered)
             TextButton(
               onPressed: () => _onMastered(context),
               child: Text(
-                'Mastered',
+                L10n.tr(context, 'mastered'),
                 style: textTheme.titleSmall?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -67,7 +70,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
 
               // ── Part of Speech ───────────────────────────────────────
               Text(
-                "A. Class: ${widget.word.pos}",
+                "A. ${L10n.tr(context, 'class')}: $localizedPos",
                 style: textTheme.titleMedium?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -77,7 +80,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
 
               // ── Phonetic ─────────────────────────────────────────────
               Text(
-                "B. Phonetic",
+                "B. ${L10n.tr(context, 'phonetic')}",
                 style: textTheme.titleMedium?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -118,7 +121,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
 
               // ── Definition ───────────────────────────────────────────
               Text(
-                "C. Definition",
+                "C. ${L10n.tr(context, 'definition')}",
                 style: textTheme.titleMedium?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,

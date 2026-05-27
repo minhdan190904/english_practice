@@ -3,7 +3,6 @@ import 'package:amplitude_flutter/events/base_event.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:english_practice/utils/global_values.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
 
 import '../configs/di.dart';
@@ -16,6 +15,7 @@ import '../ui/screens/grammar/lesson_screen.dart';
 import '../ui/screens/grammar/grammar_screen.dart';
 import '../ui/screens/home_navigation/home_navigation.dart';
 import '../ui/screens/post_auth/post_auth_splash_screen.dart';
+import '../ui/screens/splash/splash_screen.dart';
 import '../ui/screens/notifications/bloc/notifications_bloc.dart';
 import '../ui/screens/onboaring/onboarding_screen.dart';
 import '../ui/screens/progress/progress_screen.dart';
@@ -40,14 +40,10 @@ class AppRouter {
   static Amplitude amplitude = DI().sl<Amplitude>();
 
   static final router = GoRouter(
-    initialLocation: RoutePaths.vocabulary,
+    initialLocation: RoutePaths.splash,
     navigatorKey: rootNavigatorKey,
     redirect: (context, state) {
       amplitude.track(BaseEvent(state.uri.path));
-      if (!GlobalValues.isShowOnboarding) {
-        GlobalValues.isShowOnboarding = true;
-        return RoutePaths.onboarding;
-      }
       return null;
     },
     routes: [
@@ -185,6 +181,10 @@ class AppRouter {
             child: PostAuthSplashScreen(mode: mode),
           );
         },
+      ),
+      GoRoute(
+        path: RoutePaths.splash,
+        pageBuilder: (context, state) => NoTransitionPage(key: state.pageKey, child: const SplashScreen()),
       ),
     ],
   );

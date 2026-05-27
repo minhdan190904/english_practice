@@ -13,6 +13,7 @@ class SavedLesson {
   final List<SavedWord> words;
   final DateTime createdAt;
   final String? imageBase64;
+  final String? imageUrl;
   final List<SentencePair>? sentences;
 
   SavedLesson({
@@ -23,6 +24,7 @@ class SavedLesson {
     required this.words,
     required this.createdAt,
     this.imageBase64,
+    this.imageUrl,
     this.sentences,
   });
 
@@ -41,6 +43,7 @@ class SavedLesson {
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
         'imageBase64': imageBase64,
+        'imageUrl': imageUrl,
         'sentences': sentences?.map((s) => s.toJson()).toList(),
       };
 
@@ -51,6 +54,7 @@ class SavedLesson {
         'passage': passage,
         'passageVi': passageVi,
         'imageBase64': imageBase64,
+        'imageUrl': imageUrl,
         'words': words.map((w) => w.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
         'sentences': sentences?.map((s) => s.toJson()).toList(),
@@ -66,6 +70,7 @@ class SavedLesson {
             .toList(),
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         imageBase64: json['imageBase64'],
+        imageUrl: json['imageUrl'],
         sentences: json['sentences'] != null
             ? (json['sentences'] as List)
                 .map((e) => SentencePair.fromJson(Map<String, dynamic>.from(e)))

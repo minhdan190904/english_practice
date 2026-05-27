@@ -36,7 +36,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final dueWordData = _srsRepository.getDueWords();
     final dueIndices = dueWordData.map((srs) => srs.wordIndex).toSet();
     final reviewWords = vocabularyState.words
-        .where((word) => word.status == WordStatus.star && dueIndices.contains(word.index))
+        .where((word) => word.status == WordStatus.studying && dueIndices.contains(word.index))
         .toList();
 
     // Sort: overdue words first, then today's due words
@@ -155,10 +155,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, VocabularyState vocabularyState) {
-    final hasStarredWords = vocabularyState.words.any((word) => word.status == WordStatus.star);
+    final hasStudyingWords = vocabularyState.words.any((word) => word.status == WordStatus.studying);
     final hasUnknownWords = vocabularyState.words.any((word) => word.status == WordStatus.unknown);
 
-    if (hasStarredWords) {
+    if (hasStudyingWords) {
       // Has starred words but none are due — all caught up!
       final textTheme = Theme.of(context).textTheme;
       final colorScheme = Theme.of(context).colorScheme;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../utils/l10n.dart';
 
 import '../../../../data/repositories/achievement_repository.dart';
 import 'achievement_card.dart';
@@ -29,7 +30,7 @@ class AchievementGrid extends StatelessWidget {
                 color: const Color(0xFFFFC107), size: 24),
             const SizedBox(width: 8),
             Text(
-              'Achievements',
+              L10n.tr(context, 'achievements'),
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),

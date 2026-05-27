@@ -1,5 +1,5 @@
-import 'dart:ui';
-
+import 'package:flutter/material.dart';
+import '../utils/l10n.dart';
 enum WordPos {
   indefiniteArticle,
   verb,
@@ -60,6 +60,11 @@ enum WordPos {
   ];
 
   String get value => wordTypes[index];
+
+  String localizedValue(BuildContext context) {
+    final key = 'pos_${value.replaceAll(' ', '_')}';
+    return L10n.tr(context, key);
+  }
 
   Color get color => badgeColors[index];
 

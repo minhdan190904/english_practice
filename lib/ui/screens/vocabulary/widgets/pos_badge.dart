@@ -16,7 +16,7 @@ class PosBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        pos,
+        WordPos.fromString(pos).localizedValue(context),
         style: textTheme.titleSmall?.copyWith(
           color: Colors.white,
         ),

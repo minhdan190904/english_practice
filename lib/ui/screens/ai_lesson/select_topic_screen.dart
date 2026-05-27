@@ -109,6 +109,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
             .toList(),
         createdAt: DateTime.now(),
         imageBase64: lessonResult.imageBase64,
+        imageUrl: lessonResult.imageUrl,
         sentences: lessonResult.sentences,
       );
       await SavedLessonsRepository().save(lesson);
@@ -132,6 +133,7 @@ class _SelectTopicScreenState extends State<SelectTopicScreen> {
             passageVi: lessonResult.passageVi,
             selectedWords: selectedWords,
             imageBase64: lessonResult.imageBase64,
+            imageUrl: lessonResult.imageUrl,
             sentences: lessonResult.sentences,
           ),
         ),

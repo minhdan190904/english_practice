@@ -1,7 +1,7 @@
 /// App user model — replaces Firebase User for auth state.
 /// Contains user info from our backend, not Firebase.
 class AppUser {
-  final int id;
+  final String id;
   final String? email;
   final String? displayName;
   final String? avatarUrl;
@@ -20,7 +20,7 @@ class AppUser {
   /// Create from backend JSON response
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      id: json['id'] as int,
+      id: json['id'].toString(),
       email: json['email'] as String?,
       displayName: json['displayName'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
@@ -29,7 +29,7 @@ class AppUser {
   }
 
   AppUser copyWith({
-    int? id,
+    String? id,
     String? email,
     String? displayName,
     String? avatarUrl,

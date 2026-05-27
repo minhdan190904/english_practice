@@ -105,5 +105,5 @@ Map<String, dynamic> _$$WordImplToJson(_$WordImpl instance) =>
 const _$WordStatusEnumMap = {
   WordStatus.unknown: 'unknown',
   WordStatus.mastered: 'mastered',
-  WordStatus.star: 'star',
+  WordStatus.studying: 'studying',
 };

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../utils/l10n.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ class AiLessonDetailScreen extends StatefulWidget {
   final String? passageVi;
   final List<SelectedWord> selectedWords;
   final String? imageBase64;
+  final String? imageUrl;
   final List<SentencePair>? sentences;
 
   const AiLessonDetailScreen({
@@ -33,6 +35,7 @@ class AiLessonDetailScreen extends StatefulWidget {
     this.passageVi,
     required this.selectedWords,
     this.imageBase64,
+    this.imageUrl,
     this.sentences,
   });
 
@@ -96,12 +99,12 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
         final match = oxfordLookup[sw.word.toLowerCase()];
         if (match != null && match.status == WordStatus.unknown) {
           vocabBloc.add(
-            VocabularyEvent.changeStatus(match, WordStatus.learning),
+            VocabularyEvent.changeStatus(match, WordStatus.studying),
           );
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to mark words as LEARNING: $e');
+      debugPrint('⚠️ Failed to mark words as STUDYING: $e');
     }
   }
 
@@ -400,12 +403,20 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
   Widget _buildSentencePassage(BuildContext context) {
     final sentences = widget.sentences!;
     final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     // Build all sentence spans inline for natural text wrapping
     final allSpans = <InlineSpan>[];
     for (int i = 0; i < sentences.length; i++) {
       final sentence = sentences[i];
       final isSelected = _selectedSentenceIndex == i;
+
+      // Insert inline translation card RIGHT BEFORE the selected sentence
+      if (isSelected) {
+        allSpans.add(WidgetSpan(
+          child: _buildInlineTranslationCard(context, i),
+        ));
+      }
 
       // Split sentence into words and build spans with vocab highlighting
       final sentenceText = sentence.en.replaceAll('**', '').replaceAll('*', '');
@@ -428,7 +439,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             if (pre.isNotEmpty) {
               allSpans.add(TextSpan(
                 text: pre,
-                recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+                recognizer: TapGestureRecognizer()..onTap = () => _toggleInlineTranslation(i),
               ));
             }
             // Vocab word — tap shows word meaning
@@ -446,7 +457,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             if (post.isNotEmpty) {
               allSpans.add(TextSpan(
                 text: post,
-                recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+                recognizer: TapGestureRecognizer()..onTap = () => _toggleInlineTranslation(i),
               ));
             }
           } else {
@@ -455,20 +466,20 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
               text: token,
               style: isSelected
                   ? TextStyle(
-                      backgroundColor: Colors.red.withAlpha(20),
+                      backgroundColor: Colors.red.withAlpha(30),
                       decoration: TextDecoration.underline,
-                      decorationColor: Colors.red.shade300,
+                      decorationColor: Colors.red,
                       decorationStyle: TextDecorationStyle.solid,
                       decorationThickness: 1.5,
                     )
                   : null,
-              recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+              recognizer: TapGestureRecognizer()..onTap = () => _toggleInlineTranslation(i),
             ));
           }
         } else {
           allSpans.add(TextSpan(
             text: token,
-            recognizer: TapGestureRecognizer()..onTap = () => _showTranslationDialog(context, i),
+            recognizer: TapGestureRecognizer()..onTap = () => _toggleInlineTranslation(i),
           ));
         }
       }
@@ -480,67 +491,80 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-        // The flowing paragraph
-        RichText(
-          text: TextSpan(
-            style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: Colors.black87),
-            children: allSpans,
-          ),
+      child: RichText(
+        text: TextSpan(
+          style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: Colors.black87),
+          children: allSpans,
         ),
-      ],
-    ),
-  );
+      ),
+    );
   }
 
-  void _showTranslationDialog(BuildContext context, int index) {
-    setState(() {
-      _selectedSentenceIndex = index;
-    });
+  /// Build inline translation card — full-width card inserted via WidgetSpan above the selected sentence
+  Widget _buildInlineTranslationCard(BuildContext context, int index) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final sentence = widget.sentences![index];
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('🇻🇳', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 8),
-                    Text('Bản dịch', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _highlightVietnameseSentence(
-                  context,
-                  widget.sentences![index].vi,
-                  baseStyle: const TextStyle(
-                    fontSize: 18,
-                    height: 1.5,
-                    color: Colors.black87,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 6, top: 2),
+      padding: const EdgeInsets.fromLTRB(12, 8, 6, 10),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withAlpha(18),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.primary.withAlpha(50)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header with flag + close button
+          Row(
+            children: [
+              const Text('🇻🇳', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Bản dịch',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
                   ),
                 ),
-              ],
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _selectedSentenceIndex = null),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(Icons.close_rounded, size: 16, color: Colors.grey.shade500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Vietnamese translation
+          _highlightVietnameseSentence(
+            context,
+            sentence.vi,
+            baseStyle: TextStyle(
+              fontSize: 15,
+              height: 1.45,
+              color: Colors.black87,
             ),
           ),
-        );
-      },
-    ).then((_) {
-      if (mounted) {
-        setState(() {
-          _selectedSentenceIndex = null;
-        });
+        ],
+      ),
+    );
+  }
+
+  /// Toggle inline translation for a sentence (tap same = close, tap different = switch)
+  void _toggleInlineTranslation(int index) {
+    setState(() {
+      if (_selectedSentenceIndex == index) {
+        _selectedSentenceIndex = null;
+      } else {
+        _selectedSentenceIndex = index;
       }
     });
   }
@@ -849,7 +873,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                       const SizedBox(width: 16),
                       Icon(Icons.text_fields_rounded, size: 14, color: Colors.grey[500]),
                       const SizedBox(width: 4),
-                      Text('$wordCount words',
+                      Text('$wordCount từ',
                         style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500])),
                       const Spacer(),
                       OutlinedButton.icon(
@@ -871,9 +895,12 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             const SizedBox(height: 16),
 
             // ── AI-generated illustration ──
-            if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
+            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+              _LessonImageNetwork(url: widget.imageUrl!)
+            else if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
               _LessonImage(base64: widget.imageBase64!),
-            if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
+            if ((widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ||
+                (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty))
               const SizedBox(height: 16),
 
             // Language toggle bar (only show when Vietnamese translation is available)
@@ -1372,6 +1399,69 @@ class _LessonImageState extends State<_LessonImage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── AI-generated lesson illustration (network URL) ────────────────────────
+class _LessonImageNetwork extends StatefulWidget {
+  final String url;
+  const _LessonImageNetwork({required this.url});
+  @override
+  State<_LessonImageNetwork> createState() => _LessonImageNetworkState();
+}
+
+class _LessonImageNetworkState extends State<_LessonImageNetwork> {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) setState(() => _opacity = 1.0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: _opacity,
+      curve: Curves.easeOut,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: CachedNetworkImage(
+              imageUrl: widget.url,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+              errorWidget: (context, url, error) => const SizedBox.shrink(),
+            ),
+          ),
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.25),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ]),
       ),
     );
   }

@@ -30,7 +30,7 @@ class ProgressScreen extends StatelessWidget {
 
     // Calculate Vocabulary Stats
     final totalWords = vocabularyState.words.length;
-    final starredWords = vocabularyState.words.where((w) => w.status == WordStatus.star).length;
+    final starredWords = vocabularyState.words.where((w) => w.status == WordStatus.studying).length;
     final masteredWords = vocabularyState.words.where((w) => w.status == WordStatus.mastered).length;
 
     // Calculate Grammar Stats
@@ -42,34 +42,63 @@ class ProgressScreen extends StatelessWidget {
     final streakPercent = streakState.spentTimeToday / StreakBloc.timePerDayNeeded;
     final safeStreakPercent = streakPercent > 1.0 ? 1.0 : streakPercent;
 
-    return BasePage(
-      title: L10n.tr(context, 'progress'),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildSectionTitle(context, L10n.tr(context, 'streak'), Icons.local_fire_department_rounded, colorScheme.primary),
-              const SizedBox(height: 16),
-              _buildStreakCard(context, safeStreakPercent, streakState, colorScheme, textTheme),
-              const SizedBox(height: 32),
-              
-              _buildSectionTitle(context, L10n.tr(context, 'vocabulary_stats'), Icons.library_books_outlined, colorScheme.secondary),
-              const SizedBox(height: 16),
-              _buildVocabularyStats(context, totalWords, starredWords, masteredWords, colorScheme, textTheme),
-              const SizedBox(height: 32),
-              
-              _buildSectionTitle(context, L10n.tr(context, 'grammar_progress'), Icons.school_rounded, colorScheme.tertiary),
-              const SizedBox(height: 16),
-              _buildGrammarStats(context, completedLessons, totalLessons, grammarPercent, colorScheme, textTheme),
-              const SizedBox(height: 32),
+    return DefaultTabController(
+      length: 2,
+      child: BasePage(
+        title: L10n.tr(context, 'progress'),
+        padding: EdgeInsets.zero, // Remove padding from BasePage so TabBar reaches edges
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TabBar(
+              labelColor: colorScheme.primary,
+              unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 0.6),
+              indicatorColor: colorScheme.primary,
+              tabs: [
+                Tab(text: L10n.tr(context, 'statistics')),
+                Tab(text: L10n.tr(context, 'achievements')),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Tab 1: Statistics
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildSectionTitle(context, L10n.tr(context, 'streak'), Icons.local_fire_department_rounded, colorScheme.primary),
+                          const SizedBox(height: 16),
+                          _buildStreakCard(context, safeStreakPercent, streakState, colorScheme, textTheme),
+                          const SizedBox(height: 32),
+                          
+                          _buildSectionTitle(context, L10n.tr(context, 'vocabulary_stats'), Icons.library_books_outlined, colorScheme.secondary),
+                          const SizedBox(height: 16),
+                          _buildVocabularyStats(context, totalWords, starredWords, masteredWords, colorScheme, textTheme),
+                          const SizedBox(height: 32),
+                          
+                          _buildSectionTitle(context, L10n.tr(context, 'grammar_progress'), Icons.school_rounded, colorScheme.tertiary),
+                          const SizedBox(height: 16),
+                          _buildGrammarStats(context, completedLessons, totalLessons, grammarPercent, colorScheme, textTheme),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              // Achievement section
-              AchievementGrid(repository: DI().sl<AchievementRepository>()),
-              const SizedBox(height: 32),
-            ],
-          ),
+                  // Tab 2: Achievements
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      child: AchievementGrid(repository: DI().sl<AchievementRepository>()),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

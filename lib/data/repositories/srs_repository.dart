@@ -280,7 +280,7 @@ class SrsRepository {
             .where((srs) => indexToWord.containsKey(srs.wordIndex))
             .map((srs) => {
                   'word': indexToWord[srs.wordIndex],
-                  'status': (statusLookup[srs.wordIndex] ?? WordStatus.star).toApiString(),
+                  'status': (statusLookup[srs.wordIndex] ?? WordStatus.studying).toApiString(),
                   'easeFactor': srs.easeFactor,
                   'srsInterval': srs.interval,
                   'repetitions': srs.repetitions,

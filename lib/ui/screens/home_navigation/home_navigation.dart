@@ -29,12 +29,20 @@ class HomeNavigation extends StatefulWidget {
     RoutePaths.settings,
   ];
 
-  static const icons = [
-    Assets.svgVocabulary,
-    Assets.svgBook,    // AI Lessons
-    Assets.svgStreak,  // Progress (dùng streak icon có sẵn)
-    Assets.svgGrammar,
-    Assets.svgSettings,
+  static const unselectedIcons = [
+    Assets.svgVocabularyThin,
+    Assets.svgAiLessonThin,
+    Assets.svgStreakThin,
+    Assets.svgGrammarThin,
+    Assets.svgSettingThin,
+  ];
+
+  static const selectedIcons = [
+    Assets.svgVocabularyFilled,
+    Assets.svgAiLessonFilled,
+    Assets.svgStreakFilled,
+    Assets.svgGrammarFilled,
+    Assets.svgSettingFilled,
   ];
 
   static const translationKeys = [
@@ -139,13 +147,9 @@ class _HomeNavigationState extends State<HomeNavigation> {
               HomeNavigation.translationKeys.length,
               (index) => BottomNavigationBarItem(
                 icon: Container(
-                  decoration: BoxDecoration(
-                    color: index == selectedIndex ? colorScheme.primaryContainer : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: SvgPicture.asset(
-                    HomeNavigation.icons[index],
+                    index == selectedIndex ? HomeNavigation.selectedIcons[index] : HomeNavigation.unselectedIcons[index],
                     colorFilter: ColorFilter.mode(
                       index == selectedIndex ? selectedColor : unselectedColor,
                       BlendMode.srcIn,

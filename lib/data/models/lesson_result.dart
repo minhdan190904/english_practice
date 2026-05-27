@@ -38,6 +38,7 @@ class LessonResult {
   final String? passageVi;
   final List<GeneratedVocab> vocabulary;
   final String? imageBase64;
+  final String? imageUrl;
   final List<SentencePair>? sentences;
 
   LessonResult({
@@ -46,6 +47,7 @@ class LessonResult {
     this.passageVi,
     required this.vocabulary,
     this.imageBase64,
+    this.imageUrl,
     this.sentences,
   });
 
@@ -66,6 +68,7 @@ class LessonResult {
       passageVi: json['passageVi'],
       vocabulary: vocabList,
       imageBase64: json['imageBase64'],
+      imageUrl: json['imageUrl'],
       sentences: sentencesList,
     );
   }

@@ -11,7 +11,7 @@ import '../../configs/app_secrets.dart';
 /// Result of checking if a Google account exists on the backend
 class CheckGoogleResult {
   final bool exists;
-  final int? existingUserId;
+  final String? existingUserId;
   final String? existingEmail;
   final String? existingDisplayName;
   final String? existingAvatarUrl;
@@ -27,7 +27,7 @@ class CheckGoogleResult {
   factory CheckGoogleResult.fromJson(Map<String, dynamic> json) {
     return CheckGoogleResult(
       exists: json['exists'] as bool,
-      existingUserId: json['existingUserId'] as int?,
+      existingUserId: json['existingUserId']?.toString(),
       existingEmail: json['existingEmail'] as String?,
       existingDisplayName: json['existingDisplayName'] as String?,
       existingAvatarUrl: json['existingAvatarUrl'] as String?,

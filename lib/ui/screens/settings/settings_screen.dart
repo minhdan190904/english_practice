@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
@@ -160,22 +161,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                 ),
                                               ),
                                             ],
+                                            const SizedBox(height: 6),
+                                            // ID Badge
+                                            GestureDetector(
+                                              onTap: () {
+                                                final id = authState.user?.id;
+                                                if (id != null) {
+                                                  Clipboard.setData(ClipboardData(text: id));
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(L10n.tr(context, 'copied_to_clipboard')),
+                                                      duration: const Duration(seconds: 2),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.primary.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      'ID: ${authState.user?.id ?? "..."}',
+                                                      style: textTheme.labelLarge?.copyWith(
+                                                        color: colorScheme.primary,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Icon(
+                                                      Icons.copy_rounded,
+                                                      size: 14,
+                                                      color: colorScheme.primary,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ],
-                                        ),
-                                      ),
-                                      // ID Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.primary.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          'ID: ${authState.user?.id ?? "..."}',
-                                          style: textTheme.labelMedium?.copyWith(
-                                            color: colorScheme.primary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
                                         ),
                                       ),
                                     ],
@@ -887,13 +915,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _onStar() {
-    if (_status == WordStatus.star) {
+    if (_status == WordStatus.studying) {
       setState(() {
         _status = WordStatus.unknown;
       });
     } else {
       setState(() {
-        _status = WordStatus.star;
+        _status = WordStatus.studying;
       });
     }
   }

@@ -47,9 +47,8 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
       listener: (context, state) { _showWordDetails(); },
       builder: (context, state) {
         final words = _getFilteredWords(state.words);
-        final starredWords = state.words.where((w) => w.status == WordStatus.star).toList();
-        final learningWords = state.words.where((w) => w.status == WordStatus.learning).toList();
-        final reviewableWords = [...starredWords, ...learningWords];
+        final studyingWords = state.words.where((w) => w.status == WordStatus.studying).toList();
+        final reviewableWords = studyingWords;
         final masteredCount = state.words.where((w) => w.status == WordStatus.mastered).length;
 
         return BasePage(
@@ -70,8 +69,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                 _buildStatsBar(
                   context,
                   total: state.words.length,
-                  starred: starredWords.length,
-                  learning: learningWords.length,
+                  studying: studyingWords.length,
                   mastered: masteredCount,
                 ),
                 const SizedBox(height: 8),
@@ -100,7 +98,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Text(
-                      _getFilterLabel(),
+                      _getFilterLabel(context),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -138,8 +136,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
   /// Data từ VocabularyBloc (local Hive — không gọi API)
   Widget _buildStatsBar(BuildContext context, {
     required int total,
-    required int starred,
-    required int learning,
+    required int studying,
     required int mastered,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -154,10 +151,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         children: [
           _buildStatItem(context, label: L10n.tr(context, 'total'), value: total.toString(), icon: Icons.library_books_outlined),
           _buildStatDivider(colorScheme),
-          _buildStatItem(context, label: 'Learning', value: learning.toString(), icon: Icons.menu_book_rounded,
-              iconColor: Colors.indigo),
-          _buildStatDivider(colorScheme),
-          _buildStatItem(context, label: L10n.tr(context, 'studying'), value: starred.toString(), icon: Icons.star_rounded,
+          _buildStatItem(context, label: L10n.tr(context, 'studying'), value: studying.toString(), icon: Icons.star_rounded,
               iconColor: colorScheme.tertiary),
           _buildStatDivider(colorScheme),
           _buildStatItem(context, label: L10n.tr(context, 'mastered'), value: mastered.toString(), icon: Icons.check_circle_rounded,
@@ -392,12 +386,17 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     });
   }
 
-  String _getFilterLabel() {
-    final letter = _selectedLetter != null ? 'letter: ${_selectedLetter?.toLowerCase()}' : '';
-    final pos = _selectedPos.isNotEmpty ? 'pos: ${_selectedPos.map((e) => e.name).join(', ')}' : '';
-    final status = _selectedStatus.isNotEmpty ? 'status: ${_selectedStatus.map((e) => e.name).join(', ')}' : '';
-    final search = _searchText.isNotEmpty ? 'search: $_searchText' : '';
-    if (letter.isEmpty && pos.isEmpty && status.isEmpty && search.isEmpty) return 'All words';
+  String _getFilterLabel(BuildContext context) {
+    final letterLabel = L10n.tr(context, 'filter_letter');
+    final posLabel = L10n.tr(context, 'filter_pos');
+    final statusLabel = L10n.tr(context, 'filter_status');
+    final searchLabel = L10n.tr(context, 'filter_search');
+
+    final letter = _selectedLetter != null ? '$letterLabel: ${_selectedLetter?.toLowerCase()}' : '';
+    final pos = _selectedPos.isNotEmpty ? '$posLabel: ${_selectedPos.map((e) => e.localizedValue(context)).join(', ')}' : '';
+    final status = _selectedStatus.isNotEmpty ? '$statusLabel: ${_selectedStatus.map((e) => e.name).join(', ')}' : '';
+    final search = _searchText.isNotEmpty ? '$searchLabel: $_searchText' : '';
+    if (letter.isEmpty && pos.isEmpty && status.isEmpty && search.isEmpty) return L10n.tr(context, 'all_words');
     String result = '';
     if (letter.isNotEmpty) result += letter;
     if (pos.isNotEmpty) { if (result.isNotEmpty) result += ', '; result += pos; }

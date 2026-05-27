@@ -19,4 +19,5 @@ class RoutePaths {
   static const String typingChallenge = '/typing_challenge';
   static const String practice = '/practice';
   static const String postAuth = '/post-auth';
+  static const String splash = '/splash';
 }

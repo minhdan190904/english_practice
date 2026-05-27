@@ -50,9 +50,9 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     }
     final words = _oxfordWordsRepository.getAllOxfordWords();
     
-    // Auto-migrate existing starred/learning words into SRS if they aren't already there
+    // Auto-migrate existing studying words into SRS if they aren't already there
     for (final word in words) {
-      if (word.status == WordStatus.star || word.status == WordStatus.learning) {
+      if (word.status == WordStatus.studying) {
         _srsRepository.scheduleWord(word.index);
       }
     }
@@ -67,9 +67,9 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     debugPrint('VocabularyBloc: refreshWordsFromHive');
     final words = _oxfordWordsRepository.getAllOxfordWords();
     
-    // Auto-migrate starred/learning words into SRS
+    // Auto-migrate studying words into SRS
     for (final word in words) {
-      if (word.status == WordStatus.star || word.status == WordStatus.learning) {
+      if (word.status == WordStatus.studying) {
         _srsRepository.scheduleWord(word.index);
       }
     }
@@ -91,10 +91,7 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     _oxfordWordsRepository.saveWord(newWord);
     
     // SRS Syncing + push status to backend
-    if (event.status == WordStatus.star) {
-      _srsRepository.scheduleWord(event.word.index);
-      _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
-    } else if (event.status == WordStatus.learning) {
+    if (event.status == WordStatus.studying) {
       _srsRepository.scheduleWord(event.word.index);
       _srsRepository.pushWordStatus(event.word.index, event.status.toApiString());
     } else if (event.status == WordStatus.unknown) {
@@ -149,13 +146,13 @@ class VocabularyBloc extends Bloc<VocabularyEvent, VocabularyState> {
     final unknownWords = state.words.where((word) => word.status == WordStatus.unknown).toList()..shuffle();
     final randomWords = unknownWords.take(10);
     for (final word in randomWords) {
-      final newWord = word.copyWith(status: WordStatus.star);
+      final newWord = word.copyWith(status: WordStatus.studying);
       _oxfordWordsRepository.saveWord(newWord);
       _srsRepository.scheduleWord(word.index);
     }
     emit(state.copyWith(words: state.words.map((word) {
       if (randomWords.contains(word)) {
-        return word.copyWith(status: WordStatus.star);
+        return word.copyWith(status: WordStatus.studying);
       }
       return word;
     }).toList()));

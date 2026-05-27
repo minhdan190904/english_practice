@@ -1045,10 +1045,10 @@ class _PracticeScreenState extends State<PracticeScreen>
         top: false,
         child: TextButton.icon(
           onPressed: _onMastered,
-          icon: const Icon(Icons.check_circle_outline, size: 18),
-          label: const Text('Đã thuộc từ này'),
+          icon: const Icon(Icons.keyboard_double_arrow_right_rounded, size: 20),
+          label: const Text('Đã biết, loại khỏi danh sách ôn tập'),
           style: TextButton.styleFrom(
-            foregroundColor: Colors.teal,
+            foregroundColor: colorScheme.primary.withValues(alpha: 0.8),
             padding: const EdgeInsets.symmetric(vertical: 12),
             textStyle: const TextStyle(
               fontWeight: FontWeight.w600,

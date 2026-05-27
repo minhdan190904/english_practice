@@ -17,18 +17,18 @@ class AchievementChecker {
   /// Check all vocabulary-related achievements.
   /// Call after any word status change.
   Future<void> checkVocabAchievements(List<Word> words) async {
-    final starredCount =
-        words.where((w) => w.status == WordStatus.star).length;
+    final studyingCount =
+        words.where((w) => w.status == WordStatus.studying).length;
     final masteredCount =
         words.where((w) => w.status == WordStatus.mastered).length;
 
     final newlyUnlocked = <AchievementDef>[];
 
     // Star-based achievements
-    var result = await _repository.updateProgress('first_steps', starredCount);
+    var result = await _repository.updateProgress('first_steps', studyingCount);
     if (result != null) newlyUnlocked.add(result);
 
-    result = await _repository.updateProgress('word_collector', starredCount);
+    result = await _repository.updateProgress('word_collector', studyingCount);
     if (result != null) newlyUnlocked.add(result);
 
     // Mastered-based achievements
