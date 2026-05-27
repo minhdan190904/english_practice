@@ -25,7 +25,7 @@ class PaywallDialog extends StatefulWidget {
 class _PaywallDialogState extends State<PaywallDialog> {
   static const primaryId = String.fromEnvironment("PRIMARY_PRODUCT_ID");
   static const secondaryId = String.fromEnvironment("SECONDARY_PRODUCT_ID");
-  final _amplitude = DI().sl<Amplitude>();
+  final _amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
   late final ScrollController _scrollController;
   @override
   Widget build(BuildContext context) {
@@ -79,7 +79,7 @@ class _PaywallDialogState extends State<PaywallDialog> {
                     description: "+1 day use app without ads",
                     price: secondaryPrice,
                     onTap: () {
-                      _amplitude.track(BaseEvent('paywall_dialog_purchase_product'));
+                      _amplitude?.track(BaseEvent('paywall_dialog_purchase_product'));
                       context.read<IapBloc>().add(IapEvent.purchaseProduct(secondaryId));
                       context.pop();
                     },
@@ -90,7 +90,7 @@ class _PaywallDialogState extends State<PaywallDialog> {
                     description: "Enjoy our app without any ads",
                     price: primaryPrice,
                     onTap: () {
-                      _amplitude.track(BaseEvent('paywall_dialog_purchase_product'));
+                      _amplitude?.track(BaseEvent('paywall_dialog_purchase_product'));
                       context.read<IapBloc>().add(IapEvent.purchaseProduct(primaryId));
                       context.pop();
                     },
@@ -124,13 +124,13 @@ class _PaywallDialogState extends State<PaywallDialog> {
         curve: Curves.easeOut,
       );
     });
-    _amplitude.track(BaseEvent('paywall_dialog_open'));
+    _amplitude?.track(BaseEvent('paywall_dialog_open'));
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _amplitude.track(BaseEvent('paywall_dialog_close'));
+    _amplitude?.track(BaseEvent('paywall_dialog_close'));
     super.dispose();
   }
 
@@ -146,7 +146,7 @@ class _PaywallDialogState extends State<PaywallDialog> {
 
   void _onRestorePurchase(BuildContext context) {
     context.read<IapBloc>().add(IapEvent.restorePurchases());
-    _amplitude.track(BaseEvent('paywall_dialog_restore_purchase'));
+    _amplitude?.track(BaseEvent('paywall_dialog_restore_purchase'));
     context.pop();
   }
 }

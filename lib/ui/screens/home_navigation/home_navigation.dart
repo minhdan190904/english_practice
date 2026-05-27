@@ -118,7 +118,76 @@ class _HomeNavigationState extends State<HomeNavigation> {
           },
         ),
       ],
-      child: Scaffold(
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              contentPadding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              titlePadding: EdgeInsets.zero,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.exit_to_app_rounded, size: 32, color: Colors.redAccent),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Thoát ứng dụng',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Bạn có chắc chắn muốn thoát khỏi ứng dụng không?',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Ở lại', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Thoát', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+          if (shouldExit == true && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Scaffold(
         // StreakButton chỉ hiện ở Tab 0 (Vocabulary branch)
         // [BUG FIX] Dùng context.push thay vì goBranch vì /streak là top-level route (ngoài StatefulShell)
         floatingActionButton: widget.child.currentIndex == 0
@@ -162,8 +231,9 @@ class _HomeNavigationState extends State<HomeNavigation> {
             ),
           ),
         ),
-      ),
-    );
+      ),  // end Scaffold
+      ),  // end PopScope
+    );   // end MultiBlocListener
   }
 
   @override

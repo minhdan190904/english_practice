@@ -17,7 +17,7 @@ mixin RewardedAdMixin<T extends StatefulWidget> on State<T> {
       ? const String.fromEnvironment('ANDROID_REWARDED_AD_UNIT_ID')
       : const String.fromEnvironment('IOS_REWARDED_AD_UNIT_ID');
 
-  final _amplitude = DI().sl<Amplitude>();
+  final _amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
 
   @override
   void initState() {
@@ -45,7 +45,7 @@ mixin RewardedAdMixin<T extends StatefulWidget> on State<T> {
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdShowedFullScreenContent: (ad) {},
             onAdImpression: (ad) {
-              _amplitude.track(BaseEvent("rewarded_ad_impression"));
+              _amplitude?.track(BaseEvent("rewarded_ad_impression"));
             },
             onAdFailedToShowFullScreenContent: (ad, err) {
               ad.dispose();
@@ -53,7 +53,7 @@ mixin RewardedAdMixin<T extends StatefulWidget> on State<T> {
             },
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
-              _amplitude.track(BaseEvent("rewarded_ad_dismissed"));
+              _amplitude?.track(BaseEvent("rewarded_ad_dismissed"));
               _loadRewardedAd();
             },
             onAdClicked: (ad) {},
@@ -63,7 +63,7 @@ mixin RewardedAdMixin<T extends StatefulWidget> on State<T> {
           _rewardedAd = ad;
         },
         onAdFailedToLoad: (LoadAdError error) {
-          _amplitude.track(BaseEvent("rewarded_ad_error"));
+          _amplitude?.track(BaseEvent("rewarded_ad_error"));
           FirebaseAnalytics.instance.logEvent(name: "rewarded_ad_error", parameters: {"error": error.toString()});
           debugPrint('RewardedAd failed to load: $error');
         },

@@ -57,7 +57,7 @@ class BackendDio extends AppDio {
   final Connectivity _connectivity;
   final TokenStorage _tokenStorage;
 
-  static const String _baseUrl = "https://rash-boasting-neon.ngrok-free.dev/api/v1";
+  static const String _baseUrl = "http://152.42.188.203:8080/api/v1";
   static const String _apiKey = AppSecrets.apiClientKey;
 
   BackendDio({

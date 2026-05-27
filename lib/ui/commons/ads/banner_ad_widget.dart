@@ -25,7 +25,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> with AutomaticKeepAlive
   BannerAd? _bannerAd;
   bool _isLoaded = false;
   Orientation? _orientation;
-  final _amplitude = DI().sl<Amplitude>();
+  final _amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
 
   final _adUnitId = Platform.isAndroid
       ? const String.fromEnvironment('ANDROID_BANNER_AD_UNIT_ID')
@@ -67,10 +67,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> with AutomaticKeepAlive
           debugPrint("Banner ad loaded");
           _bannerAd = ad as BannerAd;
           _isLoaded = true;
-          _amplitude.track(BaseEvent("banner_ad_loaded"));
+          _amplitude?.track(BaseEvent("banner_ad_loaded"));
         }),
         onAdFailedToLoad: (ad, err) {
-          _amplitude.track(BaseEvent("banner_ad_error"));
+          _amplitude?.track(BaseEvent("banner_ad_error"));
           FirebaseAnalytics.instance.logEvent(name: "banner_ad_error", parameters: {"error": err.toString()});
           ad.dispose();
         },

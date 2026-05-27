@@ -154,7 +154,7 @@ class _PostAuthSplashScreenState extends State<PostAuthSplashScreen>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(32),
                     child: Image.asset(
-                      Assets.pngLauncherPlaystore,
+                      Assets.pngLauncher,
                       width: 120,
                       height: 120,
                     ),
@@ -164,7 +164,7 @@ class _PostAuthSplashScreenState extends State<PostAuthSplashScreen>
 
                 // App name
                 Text(
-                  'English Handbook',
+                  'VG English',
                   style: textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,

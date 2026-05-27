@@ -37,13 +37,13 @@ part 'route_paths.dart';
 class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-  static Amplitude amplitude = DI().sl<Amplitude>();
+  static Amplitude? amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
 
   static final router = GoRouter(
     initialLocation: RoutePaths.splash,
     navigatorKey: rootNavigatorKey,
     redirect: (context, state) {
-      amplitude.track(BaseEvent(state.uri.path));
+      amplitude?.track(BaseEvent(state.uri.path));
       return null;
     },
     routes: [

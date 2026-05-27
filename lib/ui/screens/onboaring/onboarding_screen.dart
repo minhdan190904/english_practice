@@ -163,7 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(32),
             child: Image.asset(
-              Assets.pngLauncherPlaystore,
+              Assets.pngLauncher,
               width: 140,
             ),
           ),

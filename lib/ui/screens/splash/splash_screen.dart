@@ -83,21 +83,21 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _runSync() async {
     try {
       // Step 1: Sync saved lessons
-      _updateStatus('Syncing lessons...', 0.15);
+      _updateStatus('Đang tải bài học...', 0.15);
       try {
         final savedLessonsRepo = SavedLessonsRepository();
         await savedLessonsRepo.syncWithServer();
       } catch (_) {}
 
       // Step 2: Sync SRS + word statuses
-      _updateStatus('Syncing vocabulary...', 0.4);
+      _updateStatus('Đang tải từ vựng...', 0.4);
       try {
         final srsRepo = DI().sl<SrsRepository>();
         await srsRepo.syncWithServer();
       } catch (_) {}
 
       // Step 3: Refresh VocabularyBloc
-      _updateStatus('Loading words...', 0.65);
+      _updateStatus('Đang lấy dữ liệu...', 0.65);
       try {
         final vocabBloc = DI().sl<VocabularyBloc>();
         if (!vocabBloc.isClosed) {
@@ -106,21 +106,21 @@ class _SplashScreenState extends State<SplashScreen>
       } catch (_) {}
 
       // Step 4: Sync achievements
-      _updateStatus('Syncing progress...', 0.8);
+      _updateStatus('Đồng bộ tiến độ...', 0.8);
       try {
         final achievementRepo = DI().sl<AchievementRepository>();
         await achievementRepo.syncWithServer();
       } catch (_) {}
 
       // Step 5: Sync streak
-      _updateStatus('Almost done...', 0.9);
+      _updateStatus('Sắp xong rồi...', 0.9);
       try {
         final streakRepo = DI().sl<StreakRepository>();
         await streakRepo.syncWithServer();
       } catch (_) {}
 
       // Done!
-      _updateStatus('Ready! ✨', 1.0);
+      _updateStatus('Sẵn sàng! ✨', 1.0);
       setState(() => _isDone = true);
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -188,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(36),
                       child: Image.asset(
-                        Assets.pngLauncherPlaystore,
+                        Assets.pngLauncher,
                         width: 130,
                         height: 130,
                       ),
@@ -206,7 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     children: [
                       Text(
-                        'English Handbook',
+                        'VG English',
                         style: textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: colorScheme.onSurface,
@@ -215,7 +215,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Master English, One Word at a Time',
+                        'Chinh phục tiếng Anh mỗi ngày',
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.5),
                           fontWeight: FontWeight.w400,

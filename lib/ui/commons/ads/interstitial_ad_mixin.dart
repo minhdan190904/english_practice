@@ -16,7 +16,7 @@ mixin InterstitialAdMixin<T extends StatefulWidget> on State<T> {
           ? const String.fromEnvironment('ANDROID_INTERSTITIAL_AD_UNIT_ID')
           : const String.fromEnvironment('IOS_INTERSTITIAL_AD_UNIT_ID');
 
-  final _amplitude = DI().sl<Amplitude>();
+  final _amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
 
   @override
   void initState() {
@@ -57,7 +57,7 @@ mixin InterstitialAdMixin<T extends StatefulWidget> on State<T> {
           );
         },
         onAdFailedToLoad: (LoadAdError error) {
-          _amplitude.track(BaseEvent("interstitial_ad_failed_to_load"));
+          _amplitude?.track(BaseEvent("interstitial_ad_failed_to_load"));
           FirebaseAnalytics.instance.logEvent(name: 'interstitial_ad_failed_to_load', parameters: {'error': error.toString()});
           debugPrint('InterstitialAd failed to load: $error');
         },
@@ -69,7 +69,7 @@ mixin InterstitialAdMixin<T extends StatefulWidget> on State<T> {
     if (isPremium) return;
     if (_interstitialAd != null) {
       _interstitialAd!.show();
-      _amplitude.track(BaseEvent("interstitial_ad_impression"));
+      _amplitude?.track(BaseEvent("interstitial_ad_impression"));
       _interstitialAd = null;
     } else {
       debugPrint('InterstitialAd is not ready yet.');

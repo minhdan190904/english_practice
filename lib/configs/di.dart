@@ -217,12 +217,14 @@ class DI {
     sl.registerLazySingleton<AudioPlayer>(() => player);
 
     const apiKey = String.fromEnvironment('AMPLITUDE_API_KEY');
-    final amplitude = Amplitude(Configuration(
-      apiKey: apiKey,
-    ));
-    sl.registerLazySingleton<Amplitude>(
-      () => amplitude,
-    );
+    if (apiKey.isNotEmpty) {
+      final amplitude = Amplitude(Configuration(
+        apiKey: apiKey,
+      ));
+      sl.registerLazySingleton<Amplitude>(
+        () => amplitude,
+      );
+    }
 
     final prefs = await SharedPreferences.getInstance();
     sl.registerLazySingleton<SharedPreferences>(

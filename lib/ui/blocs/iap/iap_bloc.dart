@@ -24,7 +24,7 @@ part 'generated/iap_bloc.freezed.dart';
 class IapBloc extends Bloc<IapEvent, IapState> {
   final IapRepository _iapRepository;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
-  final _amplitude = DI().sl<Amplitude>();
+  final _amplitude = DI().sl.isRegistered<Amplitude>() ? DI().sl<Amplitude>() : null;
 
   IapBloc({required IapRepository iapRepository}) : _iapRepository = iapRepository, super(const IapState()) {
     on<IapEvent>((event, emit) async {
@@ -76,27 +76,27 @@ class IapBloc extends Bloc<IapEvent, IapState> {
           add(IapEvent.emitState(state.copyWith(isLoading: true)));
         } else {
           if (purchase.status == PurchaseStatus.error) {
-            _amplitude.track(BaseEvent('purchase_error'));
+            _amplitude?.track(BaseEvent('purchase_error'));
             FirebaseAnalytics.instance.logEvent(name: 'purchase_error', parameters: {'error': purchase.error?.message ?? ''});
             add(IapEvent.emitState(state.copyWith(failure: Failure(message: purchase.error?.message), isLoading: false)));
             add(IapEvent.emitState(state.copyWith(failure: null, isLoading: false)));
           } else {
             if (purchase.status == PurchaseStatus.purchased) {
-              _amplitude.track(BaseEvent('purchase_success'));
+              _amplitude?.track(BaseEvent('purchase_success'));
               _processPurchase(purchase.productID);
               final isPrimary = purchase.productID == const String.fromEnvironment('PRIMARY_PRODUCT_ID');
               if (!isPrimary) {
                 _iapRepository.consumePurchase(purchase);
               }
             } else if (purchase.status == PurchaseStatus.restored) {
-              _amplitude.track(BaseEvent('purchase_restored'));
+              _amplitude?.track(BaseEvent('purchase_restored'));
               final currentPurchased = [...state.purchases];
               if (!currentPurchased.contains(purchase)) {
                 currentPurchased.add(purchase);
               }
               add((IapEvent.emitState(state.copyWith(purchases: currentPurchased))));
             } else if (purchase.status == PurchaseStatus.canceled) {
-              _amplitude.track(BaseEvent('purchase_canceled'));
+              _amplitude?.track(BaseEvent('purchase_canceled'));
               add(IapEvent.emitState(state.copyWith(failure: Failure(message: "Purchase canceled"), isLoading: false)));
               add(IapEvent.emitState(state.copyWith(failure: null, isLoading: false)));
             }
