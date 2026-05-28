@@ -306,7 +306,7 @@ class _FlashCardScreenState extends State<FlashCardScreen>
                     alignment: Alignment.center,
                     children: [
                       ...previousChildren,
-                      ?currentChild,
+                      if (currentChild != null) currentChild,
                     ],
                   ),
                   transitionBuilder: (child, animation) {

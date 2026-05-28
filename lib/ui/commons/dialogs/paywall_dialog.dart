@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:english_practice/utils/extensions/list_extension.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../configs/di.dart';
 import '../../../generated/assets.dart';
-import '../../../utils/global_values.dart';
 import '../../blocs/iap/iap_bloc.dart';
 import '../paywall_button.dart';
 import '../paywall_page.dart';

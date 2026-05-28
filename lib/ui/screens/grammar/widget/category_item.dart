@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../data/models/lesson.dart';
 import '../../../../generated/assets.dart';
+import '../../../../configs/di.dart';
+import '../../../../data/repositories/grammar_quiz_repository.dart';
 import '../bloc/lesson_bloc.dart';
 
 class CategoryItem extends StatelessWidget {
@@ -29,6 +31,8 @@ class CategoryItem extends StatelessWidget {
     return BlocBuilder<LessonBloc, LessonState>(
       builder: (context, state) {
         final isMarked = state.markedLessons[lesson.id] ?? false;
+        final quizRepo = DI().sl<GrammarQuizRepository>();
+        final quizDone = quizRepo.isCompleted(lesson.id);
         return MaterialButton(
           elevation: 0.0,
           padding: const EdgeInsets.all(12),
@@ -76,6 +80,23 @@ class CategoryItem extends StatelessWidget {
                               : colorScheme.onPrimaryContainer.withValues(
                                   alpha: isBeta ? 0.5 : 1,
                                 ),
+                        ),
+                      ),
+                    if (quizDone)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.quiz, size: 14, color: Colors.green.shade400),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Đã làm bài tập',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: Colors.green.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],

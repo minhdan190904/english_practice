@@ -23,6 +23,7 @@ import '../data/repositories/streak_repository.dart';
 import '../data/repositories/progress_repository.dart';
 import '../data/repositories/srs_repository.dart';
 import '../data/repositories/achievement_repository.dart';
+import '../data/repositories/grammar_quiz_repository.dart';
 import '../utils/achievement_checker.dart';
 import '../ui/blocs/auth/auth_cubit.dart';
 import '../ui/blocs/iap/iap_bloc.dart';
@@ -243,6 +244,10 @@ class DI {
 
     sl.registerLazySingleton<AchievementRepository>(
       () => AchievementRepository(prefs: sl()),
+    );
+
+    sl.registerLazySingleton<GrammarQuizRepository>(
+      () => GrammarQuizRepository(prefs: sl()),
     );
 
     sl.registerLazySingleton<AchievementChecker>(

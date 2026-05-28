@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:english_practice/utils/app_snack_bar.dart';
-
-import '../../../../generated/assets.dart';
-import '../../../data/models/category_data.dart';
-import '../../../data/models/lesson.dart';
-
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
 import 'bloc/lesson_bloc.dart';

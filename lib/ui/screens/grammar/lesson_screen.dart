@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../../../data/models/lesson.dart';
 
 import '../../commons/ads/banner_ad_widget.dart';
 import '../../commons/base_page.dart';
-import '../../commons/dialogs/translation_dialog.dart';
 import '../../commons/selection_area_with_search.dart';
 import '../settings/bloc/settings_bloc.dart';
 import 'bloc/lesson_bloc.dart';
+import '../../../navigation/app_router.dart';
 
 class LessonScreen extends StatefulWidget {
   final Lesson lesson;
@@ -57,42 +58,61 @@ class _LessonScreenState extends State<LessonScreen> {
           child: Column(
             children: [
               Expanded(
-                child: BasePage(
-                  title: title,
-                  actions: [
-                    // Toggle EN/VI — chỉ hiện khi bài học có bản tiếng Việt
-                    if (hasVi)
-                      GestureDetector(
-                        onTap: () => _toggleLanguage(isVi),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            isVi ? '🇻🇳 VI' : '🇬🇧 EN',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  floatingActionButton: FloatingActionButton.extended(
+                    onPressed: () {
+                      context.push(
+                        RoutePaths.grammarQuiz,
+                        extra: {
+                          'topicId': widget.lesson.id,
+                          'topicTitle': widget.lesson.title,
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.quiz_outlined, size: 20),
+                    label: const Text(
+                      'Làm bài tập',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  body: BasePage(
+                    title: title,
+                    actions: [
+                      // Toggle EN/VI — chỉ hiện khi bài học có bản tiếng Việt
+                      if (hasVi)
+                        GestureDetector(
+                          onTap: () => _toggleLanguage(isVi),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              isVi ? '🇻🇳 VI' : '🇬🇧 EN',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    Checkbox(
-                      value: state.markedLessons[widget.lesson.id] ?? false,
-                      onChanged: (value) {
-                        _onMarkAsRead(value);
-                      },
-                    )
-                  ],
-                  child: data == null
-                      ? Center(child: LoadingAnimationWidget.fourRotatingDots(color: colorScheme.primary, size: 40))
-                      : SelectionAreaWithSearch(
-                          child: Markdown(data: data!, controller: _scrollController, softLineBreak: true),
-                        ),
+                      Checkbox(
+                        value: state.markedLessons[widget.lesson.id] ?? false,
+                        onChanged: (value) {
+                          _onMarkAsRead(value);
+                        },
+                      )
+                    ],
+                    child: data == null
+                        ? Center(child: LoadingAnimationWidget.fourRotatingDots(color: colorScheme.primary, size: 40))
+                        : SelectionAreaWithSearch(
+                            child: Markdown(data: data!, controller: _scrollController, softLineBreak: true),
+                          ),
+                  ),
                 ),
               ),
               const BannerAdWidget(),

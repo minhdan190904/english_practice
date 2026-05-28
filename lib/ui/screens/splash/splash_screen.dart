@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../configs/di.dart';
 import '../../../data/models/saved_lesson.dart';
 import '../../../data/repositories/achievement_repository.dart';
+import '../../../data/repositories/grammar_quiz_repository.dart';
 import '../../../data/repositories/srs_repository.dart';
 import '../../../data/repositories/streak_repository.dart';
 import '../../../generated/assets.dart';
@@ -105,11 +106,15 @@ class _SplashScreenState extends State<SplashScreen>
         }
       } catch (_) {}
 
-      // Step 4: Sync achievements
+      // Step 4: Sync achievements + grammar quiz
       _updateStatus('Đồng bộ tiến độ...', 0.8);
       try {
         final achievementRepo = DI().sl<AchievementRepository>();
         await achievementRepo.syncWithServer();
+      } catch (_) {}
+      try {
+        final grammarQuizRepo = DI().sl<GrammarQuizRepository>();
+        await grammarQuizRepo.syncWithServer();
       } catch (_) {}
 
       // Step 5: Sync streak

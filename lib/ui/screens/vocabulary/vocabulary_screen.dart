@@ -17,9 +17,6 @@ import '../notifications/bloc/notifications_bloc.dart';
 import 'bloc/vocabulary_bloc.dart';
 import 'widgets/search_box.dart';
 import 'widgets/vocabulary_item.dart';
-import 'widgets/srs_review_banner.dart';
-import '../../../configs/di.dart';
-import '../../../data/repositories/srs_repository.dart';
 import '../../../utils/l10n.dart';
 import '../../../utils/global_values.dart';
 
