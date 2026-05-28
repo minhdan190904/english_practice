@@ -53,7 +53,7 @@ class QuizQuestion {
       sentence: json['sentence'] as String?,
       options: (json['options'] as List?)?.map((e) => e as String).toList() ?? [],
       words: (json['words'] as List?)?.map((e) => e as String).toList() ?? [],
-      correctAnswer: json['correctAnswer'] as int,
+      correctAnswer: (json['correctAnswer'] as int?) ?? -1,
       correctOrder: (json['correctOrder'] as List?)?.map((e) => e as int).toList() ?? [],
       correctedSentence: json['correctedSentence'] as String?,
       correctSentence: json['correctSentence'] as String?,

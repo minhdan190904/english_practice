@@ -5,6 +5,7 @@ import '../../../configs/di.dart';
 import '../../../data/models/saved_lesson.dart';
 import '../../../data/repositories/achievement_repository.dart';
 import '../../../data/repositories/grammar_quiz_repository.dart';
+import '../../../data/repositories/lesson_repository.dart';
 import '../../../data/repositories/srs_repository.dart';
 import '../../../data/repositories/streak_repository.dart';
 import '../../../generated/assets.dart';
@@ -88,6 +89,10 @@ class _SplashScreenState extends State<SplashScreen>
       try {
         final savedLessonsRepo = SavedLessonsRepository();
         await savedLessonsRepo.syncWithServer();
+      } catch (_) {}
+      try {
+        final lessonRepo = DI().sl<LessonRepository>();
+        await lessonRepo.syncWithServer();
       } catch (_) {}
 
       // Step 2: Sync SRS + word statuses
