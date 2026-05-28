@@ -279,13 +279,13 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE8FF),
+                  color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   displayDef,
-                  style: const TextStyle(
-                    fontSize: 15, color: Color(0xFF1A3A7A), height: 1.5,
+                  style: TextStyle(
+                    fontSize: 15, color: colorScheme.onPrimaryContainer, height: 1.5,
                   ),
                 ),
               ),
@@ -297,7 +297,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: Colors.green.withAlpha(25),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -306,7 +306,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                     Text(
                       L10n.tr(context, 'examples'),
                       style: TextStyle(
-                        fontSize: 12, color: Colors.green[700],
+                        fontSize: 12, color: Colors.green,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -314,7 +314,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                     Text(
                       word.example!,
                       style: TextStyle(
-                        fontSize: 14, color: Colors.green[800],
+                        fontSize: 14, color: colorScheme.onSurface,
                         fontStyle: FontStyle.italic, height: 1.4,
                       ),
                     ),
@@ -337,6 +337,8 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
 
   Widget _buildHighlightedPassage(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     // Use pre-computed word map from initState
     final wordTokenRegex = RegExp(r"^([^a-zA-Z']*)([a-zA-Z']+)([^a-zA-Z']*)$");
 
@@ -358,6 +360,9 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
         if (isHighlighted) {
           if (pre.isNotEmpty) spans.add(TextSpan(text: pre));
           final selectedWord = _wordMap[word.toLowerCase()]!;
+          // In dark mode use a darker amber bg so yellow highlight still reads well
+          final highlightBg = isDark ? const Color(0xFF7A5C00) : const Color(0xFFFDE68A);
+          final highlightFg = isDark ? const Color(0xFFFFE082) : Colors.black87;
           spans.add(WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
@@ -365,17 +370,17 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
               onTap: () => _showWordMeaning(context, selectedWord),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFDE68A),
-                  borderRadius: BorderRadius.all(Radius.circular(3)),
+                decoration: BoxDecoration(
+                  color: highlightBg,
+                  borderRadius: const BorderRadius.all(Radius.circular(3)),
                 ),
                 child: Text(
                   word,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     height: 1.7,
-                    color: Colors.black87,
+                    color: highlightFg,
                     fontWeight: FontWeight.w600,
-                    backgroundColor: const Color(0xFFFDE68A),
+                    backgroundColor: highlightBg,
                   ),
                 ),
               ),
@@ -393,7 +398,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
 
     return RichText(
       text: TextSpan(
-        style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: Colors.black87),
+        style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: colorScheme.onSurface),
         children: spans,
       ),
     );
@@ -493,7 +498,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
       physics: const NeverScrollableScrollPhysics(),
       child: RichText(
         text: TextSpan(
-          style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: Colors.black87),
+          style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, color: colorScheme.onSurface),
           children: allSpans,
         ),
       ),
@@ -550,7 +555,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             baseStyle: TextStyle(
               fontSize: 15,
               height: 1.45,
-              color: Colors.black87,
+              color: colorScheme.onSurface,
             ),
           ),
         ],
@@ -854,9 +859,9 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: Offset(0, 2))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,15 +871,15 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[500]),
+                      Icon(Icons.access_time_rounded, size: 14, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(L10n.tr(context, 'created_today'),
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500])),
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
                       const SizedBox(width: 16),
-                      Icon(Icons.text_fields_rounded, size: 14, color: Colors.grey[500]),
+                      Icon(Icons.text_fields_rounded, size: 14, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text('$wordCount từ',
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[500])),
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
                       const Spacer(),
                       OutlinedButton.icon(
                         onPressed: () => _showReportDialog(context),
@@ -883,7 +888,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           textStyle: const TextStyle(fontSize: 12),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          side: BorderSide(color: colorScheme.outlineVariant),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
@@ -1009,9 +1014,9 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: const Offset(0, 2))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,7 +1036,7 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                                   ? _buildVietnameseFullPassage(context)
                                   : Text(
                                       (widget.passageVi ?? '').replaceAll('**', '').replaceAll('*', ''),
-                                      style: TextStyle(height: 1.6, fontSize: 16, color: Colors.grey.shade800),
+                                      style: TextStyle(height: 1.6, fontSize: 16, color: colorScheme.onSurface),
                                     ))
                               : (widget.sentences != null && widget.sentences!.isNotEmpty
                                   ? _buildSentencePassage(context)
@@ -1047,7 +1052,10 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
                                     gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
-                                      colors: [Colors.white.withAlpha(0), Colors.white],
+                                      colors: [
+                                        colorScheme.surfaceContainer.withAlpha(0),
+                                        colorScheme.surfaceContainer,
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -1135,9 +1143,9 @@ class _AiLessonDetailScreenState extends State<AiLessonDetailScreen> {
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: const Offset(0, 2))],
               ),
               child: ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),

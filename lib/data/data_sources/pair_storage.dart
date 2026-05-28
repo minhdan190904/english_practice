@@ -13,6 +13,13 @@ abstract interface class PairStorage {
 
   Future<void> setStreak(int streak);
 
+  /// Update longestStreak directly (used when syncing from server).
+  Future<void> setLongestStreak(int longest);
+
+  /// Checks if streak is broken (no activity yesterday) and resets if so.
+  /// Call this once on app start, NOT inside a getter.
+  Future<void> resetStreakIfBroken();
+
   int get streak;
 
   int get longestStreak;
@@ -61,17 +68,24 @@ class SharedPreferencesStorage implements PairStorage {
   }
 
   @override
-  int get streak {
+  Future<void> resetStreakIfBroken() async {
     final now = DateTime.now();
     final yesterday = now.subtract(const Duration(days: 1));
     final yesterdayKey = '${yesterday.year}-${yesterday.month}-${yesterday.day}-streaked';
     final yesterdayStreaked = _sharedPreferences.getBool(yesterdayKey) ?? false;
-    if (!yesterdayStreaked) {
-      final todayKey = '${now.year}-${now.month}-${now.day}-streaked';
-      _sharedPreferences.setBool(todayKey, false);
-      _sharedPreferences.setInt(_streakKey, 0);
-      return 0;
+    final todayKey = '${now.year}-${now.month}-${now.day}-streaked';
+    final todayStreaked = _sharedPreferences.getBool(todayKey) ?? false;
+
+    // Only reset if: yesterday not streaked AND today also not yet streaked
+    // (avoid resetting mid-day if user already completed streak today)
+    if (!yesterdayStreaked && !todayStreaked) {
+      await _sharedPreferences.setInt(_streakKey, 0);
     }
+  }
+
+  @override
+  int get streak {
+    // Pure getter — no side effects. Just read the stored value.
     return _sharedPreferences.getInt(_streakKey) ?? 0;
   }
 
@@ -88,6 +102,13 @@ class SharedPreferencesStorage implements PairStorage {
     await _sharedPreferences.setInt(_streakKey, streak);
     if (streak > longestStreak) {
       await _sharedPreferences.setInt(_longestStreakKey, streak);
+    }
+  }
+
+  @override
+  Future<void> setLongestStreak(int longest) async {
+    if (longest > longestStreak) {
+      await _sharedPreferences.setInt(_longestStreakKey, longest);
     }
   }
 

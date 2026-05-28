@@ -17,11 +17,14 @@ abstract interface class StreakRepository {
 
   bool get streakedToday;
 
-  /// Sync streak data with server
+  /// Sync streak data from server → overwrites local if server has higher values.
   Future<void> syncWithServer();
 
-  /// Check-in with server (call when streak is earned)
+  /// Send today's check-in to server.
   Future<void> checkInWithServer();
+
+  /// Call once on app start to reset streak if user missed yesterday.
+  Future<void> resetStreakIfBroken();
 }
 
 class StreakRepositoryImpl implements StreakRepository {
@@ -55,6 +58,11 @@ class StreakRepositoryImpl implements StreakRepository {
     return _pairStorage.setStreak(streak);
   }
 
+  @override
+  Future<void> resetStreakIfBroken() {
+    return _pairStorage.resetStreakIfBroken();
+  }
+
   // ─── Server Sync ───
 
   @override
@@ -67,17 +75,16 @@ class StreakRepositoryImpl implements StreakRepository {
         final serverStreak = data['currentStreak'] as int? ?? 0;
         final serverMax = data['maxStreak'] as int? ?? 0;
 
-        // Use whichever is higher (local or server)
-        final localStreak = streak;
-        final localMax = longestStreak;
-
-        if (serverStreak > localStreak) {
-          await setStreak(serverStreak);
-          debugPrint('🔥 Pulled streak from server: $serverStreak');
+        // Always trust server as source of truth for streak count
+        if (serverStreak > streak) {
+          await _pairStorage.setStreak(serverStreak);
+          debugPrint('🔥 Pulled currentStreak from server: $serverStreak');
         }
-        if (serverMax > localMax) {
-          // Update local max (stored in PairStorage)
-          debugPrint('🔥 Server max streak: $serverMax (local: $localMax)');
+
+        // FIX: Actually persist maxStreak from server (was only printing before!)
+        if (serverMax > longestStreak) {
+          await _pairStorage.setLongestStreak(serverMax);
+          debugPrint('🔥 Updated longestStreak from server: $serverMax');
         }
       }
     } catch (e) {

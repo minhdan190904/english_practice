@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../data/repositories/streak_repository.dart';
@@ -38,56 +37,69 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
     });
   }
 
-  _onWatchStreak(WatchStreak event, Emitter<StreakState> emit) {
-    debugPrint('StreakBloc: watchStreak');
-    final timeStreak = _streakRepository.getTimeStreak();
-    final longestStreak = _streakRepository.longestStreak;
-    final streak = _streakRepository.streak;
+  Future<void> _onWatchStreak(WatchStreak event, Emitter<StreakState> emit) async {
+    // Step 1: Reset streak locally if user missed yesterday (best practice: do this
+    // once at startup, not inside a getter to avoid side-effects)
+    await _streakRepository.resetStreakIfBroken();
+
+    // Step 2: Sync with server to restore correct values after device change/reinstall
+    await _streakRepository.syncWithServer();
+
+    // Step 3: Emit initial state from (now-corrected) local storage
     emit(StreakState(
-      spentTimeToday: timeStreak,
-      longestStreak: longestStreak,
-      streak: streak,
+      spentTimeToday: _streakRepository.getTimeStreak(),
+      longestStreak: _streakRepository.longestStreak,
+      streak: _streakRepository.streak,
     ));
+
+    // Step 4: Start timer — ticks every second while app is in foreground
     _streakTimer?.cancel();
     _streakTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (isClosed) {
         timer.cancel();
         return;
       }
+
+      // Don't keep counting time if user already earned streak today
+      if (_streakRepository.streakedToday) return;
+
       final newSpentTimeToday = _streakRepository.getTimeStreak() + 1;
-      // Only emit if the value actually changed to avoid unnecessary UI rebuilds
+      _streakRepository.setTimeStreak(newSpentTimeToday);
+
+      // Only rebuild UI when value changed
       if (newSpentTimeToday != state.spentTimeToday) {
-        add(StreakEvent.emitState(state.copyWith(
-          spentTimeToday: newSpentTimeToday,
-        )));
+        add(StreakEvent.emitState(state.copyWith(spentTimeToday: newSpentTimeToday)));
       }
-      if (!_streakRepository.streakedToday) {
-        _streakRepository.setTimeStreak(newSpentTimeToday);
-      }
-      if (newSpentTimeToday >= timePerDayNeeded && !_streakRepository.streakedToday) {
+
+      // Threshold reached → earn streak for today
+      if (newSpentTimeToday >= timePerDayNeeded) {
         final newStreak = _streakRepository.streak + 1;
-        final newLongestStreak = newStreak > longestStreak ? newStreak : longestStreak;
-        add(StreakEvent.emitState(state.copyWith(
-          streak: newStreak,
-          longestStreak: newLongestStreak,
-        )));
-        _streakRepository.setStreak(newStreak);
+        // FIX: read longestStreak AFTER newStreak is computed (old code read it before)
+        final newLongestStreak = newStreak > _streakRepository.longestStreak
+            ? newStreak
+            : _streakRepository.longestStreak;
+
+        _streakRepository.setStreak(newStreak); // also updates longestStreak locally
         _achievementChecker.checkStreakAchievements(newStreak);
-        
-        // Sync streak to server
+
+        // Fire-and-forget server calls (non-blocking)
         _streakRepository.checkInWithServer();
-        
-        // Log to backend
         _progressRepository.logSession(
           timeSpentSeconds: timePerDayNeeded,
           wordsLearned: 0,
           lessonsCompleted: 0,
         );
+
+        add(StreakEvent.emitState(state.copyWith(
+          streak: newStreak,
+          longestStreak: newLongestStreak,
+          spentTimeToday: newSpentTimeToday,
+        )));
       }
     });
   }
 
-  _onEmitState(EmitState event, Emitter<StreakState> emit) {
+  Future<void> _onEmitState(EmitState event, Emitter<StreakState> emit) async {
     emit(event.state);
   }
 
@@ -98,3 +110,4 @@ class StreakBloc extends Bloc<StreakEvent, StreakState> {
     return super.close();
   }
 }
+

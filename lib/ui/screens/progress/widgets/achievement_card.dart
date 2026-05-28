@@ -30,12 +30,12 @@ class AchievementCard extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: unlocked ? Colors.white : Colors.grey.shade50,
+          color: unlocked ? colorScheme.surfaceContainer : colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: unlocked
                 ? colorScheme.primary.withValues(alpha: 0.4)
-                : Colors.grey.shade200,
+                : colorScheme.outlineVariant,
             width: unlocked ? 1.5 : 1,
           ),
           boxShadow: unlocked
@@ -61,7 +61,7 @@ class AchievementCard extends StatelessWidget {
                       definition.icon,
                       style: TextStyle(
                         fontSize: 32,
-                        color: unlocked ? null : Colors.grey,
+                        color: unlocked ? null : colorScheme.outline,
                       ),
                     ),
                   ),
@@ -72,13 +72,13 @@ class AchievementCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade400,
+                          color: colorScheme.outline,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.lock,
                           size: 10,
-                          color: Colors.white,
+                          color: colorScheme.surface,
                         ),
                       ),
                     ),
@@ -92,7 +92,7 @@ class AchievementCard extends StatelessWidget {
               definition.nameVi,
               style: textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: unlocked ? Colors.black87 : Colors.grey.shade500,
+                color: unlocked ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -106,7 +106,7 @@ class AchievementCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: percent,
                 minHeight: 4,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation(
                   unlocked ? Colors.green : colorScheme.primary,
                 ),
@@ -120,7 +120,7 @@ class AchievementCard extends StatelessWidget {
                   ? '✓'
                   : '${progress.currentProgress}/${definition.target}',
               style: textTheme.labelSmall?.copyWith(
-                color: unlocked ? Colors.green : Colors.grey.shade500,
+                color: unlocked ? Colors.green : colorScheme.onSurfaceVariant,
                 fontSize: 10,
               ),
             ),

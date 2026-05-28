@@ -78,7 +78,7 @@ class _AchievementPopupState extends State<AchievementPopup>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 28),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
@@ -140,7 +140,7 @@ class _AchievementPopupState extends State<AchievementPopup>
                   widget.achievement.nameVi,
                   style: textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -149,7 +149,7 @@ class _AchievementPopupState extends State<AchievementPopup>
                 Text(
                   widget.achievement.descriptionVi,
                   style: textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),

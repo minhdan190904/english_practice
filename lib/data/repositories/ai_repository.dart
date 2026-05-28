@@ -123,4 +123,28 @@ class AiRepository {
       },
     );
   }
+
+  /// Generate AI grammar examples + quiz questions themed around user's interest.
+  Future<Map<String, dynamic>> generateGrammarExamples({
+    required String grammarTopic,
+    required String userInterest,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/ai/grammar-examples',
+        data: {
+          'grammarTopic': grammarTopic,
+          'userInterest': userInterest,
+        },
+      );
+
+      var data = response.data;
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      throw Exception('Failed to generate grammar examples: $e');
+    }
+  }
 }

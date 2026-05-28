@@ -60,21 +60,45 @@ class _LessonScreenState extends State<LessonScreen> {
               Expanded(
                 child: Scaffold(
                   backgroundColor: Colors.transparent,
-                  floatingActionButton: FloatingActionButton.extended(
-                    onPressed: () {
-                      context.push(
-                        RoutePaths.grammarQuiz,
-                        extra: {
-                          'topicId': widget.lesson.id,
-                          'topicTitle': widget.lesson.title,
+                  floatingActionButton: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton.extended(
+                        heroTag: 'ai_examples',
+                        onPressed: () {
+                          context.push(
+                            RoutePaths.grammarAi,
+                            extra: {
+                              'grammarTopic': widget.lesson.title,
+                              'lessonId': widget.lesson.id,
+                            },
+                          );
                         },
-                      );
-                    },
-                    icon: const Icon(Icons.quiz_outlined, size: 20),
-                    label: const Text(
-                      'Làm bài tập',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                        icon: const Icon(Icons.auto_awesome, size: 20),
+                        label: const Text(
+                          'AI Examples',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FloatingActionButton.extended(
+                        heroTag: 'quiz',
+                        onPressed: () {
+                          context.push(
+                            RoutePaths.grammarQuiz,
+                            extra: {
+                              'topicId': widget.lesson.id,
+                              'topicTitle': widget.lesson.title,
+                            },
+                          );
+                        },
+                        icon: const Icon(Icons.quiz_outlined, size: 20),
+                        label: const Text(
+                          'Làm bài tập',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ),
                   body: BasePage(
                     title: title,
@@ -110,7 +134,91 @@ class _LessonScreenState extends State<LessonScreen> {
                     child: data == null
                         ? Center(child: LoadingAnimationWidget.fourRotatingDots(color: colorScheme.primary, size: 40))
                         : SelectionAreaWithSearch(
-                            child: Markdown(data: data!, controller: _scrollController, softLineBreak: true),
+                            child: Builder(builder: (ctx) {
+                              final theme = Theme.of(ctx);
+                              final cs = theme.colorScheme;
+                              final isDark = theme.brightness == Brightness.dark;
+                              final base = MarkdownStyleSheet.fromTheme(theme);
+
+                              // Code block
+                              final codeBlockBg = isDark
+                                  ? cs.surfaceContainerHighest
+                                  : cs.surfaceContainerLow;
+
+                              // Blockquote — the blue description box at top of grammar lessons
+                              final blockquoteBg = isDark
+                                  ? cs.primaryContainer.withAlpha(80)
+                                  : cs.primaryContainer;
+                              final blockquoteTextColor = isDark
+                                  ? cs.onSurface
+                                  : cs.onPrimaryContainer;
+
+                              // Table
+                              final tableHeadBg = isDark
+                                  ? cs.surfaceContainerHighest
+                                  : cs.surfaceContainerLow;
+                              final tableBorderColor = isDark
+                                  ? cs.outline.withAlpha(100)
+                                  : cs.outlineVariant;
+
+                              return Markdown(
+                                data: data!,
+                                controller: _scrollController,
+                                softLineBreak: true,
+                                styleSheet: base.copyWith(
+                                  // Code
+                                  code: base.code?.copyWith(
+                                    backgroundColor: codeBlockBg,
+                                    color: cs.onSurface,
+                                  ),
+                                  codeblockDecoration: BoxDecoration(
+                                    color: codeBlockBg,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  // Blockquote
+                                  blockquoteDecoration: BoxDecoration(
+                                    color: blockquoteBg,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border(
+                                      left: BorderSide(
+                                        color: cs.primary,
+                                        width: 4,
+                                      ),
+                                    ),
+                                  ),
+                                  blockquote: base.blockquote?.copyWith(
+                                    color: blockquoteTextColor,
+                                  ),
+                                  // Table
+                                  tableHead: base.tableHead?.copyWith(
+                                    color: cs.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  tableBody: base.tableBody?.copyWith(
+                                    color: cs.onSurface,
+                                  ),
+                                  tableHeadAlign: TextAlign.left,
+                                  tableBorder: TableBorder.all(
+                                    color: tableBorderColor,
+                                    width: 1,
+                                  ),
+                                  tableColumnWidth: const FlexColumnWidth(),
+                                  tableCellsPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  // Body text
+                                  p: base.p?.copyWith(color: cs.onSurface),
+                                  h1: base.h1?.copyWith(color: cs.onSurface),
+                                  h2: base.h2?.copyWith(color: cs.onSurface),
+                                  h3: base.h3?.copyWith(color: cs.onSurface),
+                                  h4: base.h4?.copyWith(color: cs.onSurface),
+                                  strong: base.strong?.copyWith(color: cs.onSurface),
+                                  em: base.em?.copyWith(color: cs.onSurface),
+                                  listBullet: base.listBullet?.copyWith(color: cs.onSurface),
+                                ),
+                              );
+                            }),
                           ),
                   ),
                 ),

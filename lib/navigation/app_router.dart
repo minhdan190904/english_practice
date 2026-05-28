@@ -32,6 +32,7 @@ import '../ui/screens/ai_lesson/ai_lesson_screen.dart';
 import '../ui/screens/typing/typing_challenge_screen.dart';
 import '../ui/screens/practice/practice_screen.dart';
 import '../ui/screens/grammar_quiz/grammar_quiz_screen.dart';
+import '../ui/screens/grammar/grammar_ai_screen.dart';
 
 part 'route_paths.dart';
 
@@ -161,6 +162,15 @@ class AppRouter {
                 final topicId = extra?['topicId'] as int;
                 final topicTitle = extra?['topicTitle'] as String? ?? 'Bài tập';
                 return SwipeablePage(key: state.pageKey, builder: (context) => GrammarQuizScreen(topicId: topicId, topicTitle: topicTitle));
+              },
+            ),
+            GoRoute(
+              path: RoutePaths.grammarAi,
+              pageBuilder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                final grammarTopic = extra?['grammarTopic'] as String? ?? '';
+                final lessonId = extra?['lessonId'] as int? ?? 0;
+                return SwipeablePage(key: state.pageKey, builder: (context) => GrammarAiScreen(grammarTopic: grammarTopic, lessonId: lessonId));
               },
             ),
           ]),
